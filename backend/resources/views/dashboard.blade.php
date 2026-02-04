@@ -1,17 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'Tableau de Bord')
-@section('header', 'Tableau de Bord')
+@section('title', __('Dashboard'))
+@section('header', __('Dashboard'))
 
 @section('content')
     <!-- Stats Grid -->
     <div class="mb-6 flex justify-between items-center">
-        <h2 class="text-xl font-bold text-gray-800">Aperçu</h2>
+        <h2 class="text-xl font-bold text-gray-800">{{ __('Overview') }}</h2>
         <div class="inline-flex bg-gray-100 rounded-lg p-1">
-            <button onclick="changeFilter('day')" id="filter-day" class="px-4 py-2 rounded-md text-sm font-medium bg-white text-gray-800 shadow-sm transition-all">Jour</button>
-            <button onclick="changeFilter('week')" id="filter-week" class="px-4 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 transition-all">Semaine</button>
-            <button onclick="changeFilter('month')" id="filter-month" class="px-4 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 transition-all">Mois</button>
-            <button onclick="changeFilter('year')" id="filter-year" class="px-4 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 transition-all">Année</button>
+            <button onclick="changeFilter('day')" id="filter-day" class="px-4 py-2 rounded-md text-sm font-medium bg-white text-gray-800 shadow-sm transition-all">{{ __('Day') }}</button>
+            <button onclick="changeFilter('week')" id="filter-week" class="px-4 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 transition-all">{{ __('Week') }}</button>
+            <button onclick="changeFilter('month')" id="filter-month" class="px-4 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 transition-all">{{ __('Month') }}</button>
+            <button onclick="changeFilter('year')" id="filter-year" class="px-4 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900 transition-all">{{ __('Year') }}</button>
         </div>
     </div>
 
@@ -19,7 +19,7 @@
         <!-- Client Count -->
         <div class="bg-white rounded-xl shadow-sm p-6 flex items-center justify-between transform hover:scale-105 transition-transform duration-300">
             <div>
-                <p class="text-sm font-medium text-gray-500">Total Clients</p>
+                <p class="text-sm font-medium text-gray-500">{{ __('Total Clients') }}</p>
                 <p class="text-3xl font-bold text-gray-900 mt-1" id="stat-clients">-</p>
             </div>
             <div class="p-3 bg-blue-100 rounded-full text-blue-600">
@@ -30,7 +30,7 @@
         <!-- Transaction Volume -->
         <div class="bg-white rounded-xl shadow-sm p-6 flex items-center justify-between transform hover:scale-105 transition-transform duration-300">
             <div>
-                <p class="text-sm font-medium text-gray-500">Volume Transactions</p>
+                <p class="text-sm font-medium text-gray-500">{{ __('Transaction Volume') }}</p>
                 <p class="text-3xl font-bold text-gray-900 mt-1" id="stat-volume">-</p>
             </div>
             <div class="p-3 bg-green-100 rounded-full text-green-600">
@@ -41,7 +41,7 @@
         <!-- Agents (Visible to all for now) -->
         <div class="bg-white rounded-xl shadow-sm p-6 flex items-center justify-between transform hover:scale-105 transition-transform duration-300">
             <div>
-                <p class="text-sm font-medium text-gray-500">Agents Actifs</p>
+                <p class="text-sm font-medium text-gray-500">{{ __('Active Agents') }}</p>
                 <p class="text-3xl font-bold text-gray-900 mt-1" id="stat-agents">-</p>
             </div>
             <div class="p-3 bg-indigo-100 rounded-full text-indigo-600">
@@ -53,7 +53,7 @@
         <!-- Profit (Admin Only) -->
         <div class="bg-white rounded-xl shadow-sm p-6 flex items-center justify-between transform hover:scale-105 transition-transform duration-300 border-l-4 border-purple-500">
             <div>
-                <p class="text-sm font-medium text-gray-500">Bénéfice Total</p>
+                <p class="text-sm font-medium text-gray-500">{{ __('Total Profit') }}</p>
                 <p class="text-3xl font-bold text-purple-900 mt-1" id="stat-profit">-</p>
             </div>
             <div class="p-3 bg-purple-100 rounded-full text-purple-600">
@@ -66,24 +66,24 @@
     <!-- Recent Transactions Table -->
     <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
         <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-            <h2 class="text-lg font-semibold text-gray-800">Transactions Récentes</h2>
-            <button class="text-sm text-primary hover:text-indigo-800 font-medium">Voir Tout</button>
+            <h2 class="text-lg font-semibold text-gray-800">{{ __('Recent Transactions') }}</h2>
+            <button class="text-sm text-primary hover:text-indigo-800 font-medium">{{ __('See All') }}</button>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full whitespace-nowrap">
                 <thead>
                     <tr class="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <th class="px-6 py-3">Référence</th>
-                        <th class="px-6 py-3">Client</th>
-                        <th class="px-6 py-3">Type</th>
-                        <th class="px-6 py-3 text-right">Montant</th>
-                        <th class="px-6 py-3">Statut</th>
-                        <th class="px-6 py-3">Date</th>
+                        <th class="px-6 py-3">{{ __('Reference') }}</th>
+                        <th class="px-6 py-3">{{ __('Client') }}</th>
+                        <th class="px-6 py-3">{{ __('Type') }}</th>
+                        <th class="px-6 py-3 text-right">{{ __('Amount') }}</th>
+                        <th class="px-6 py-3">{{ __('Status') }}</th>
+                        <th class="px-6 py-3">{{ __('Date') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100" id="transactions-table-body">
                     <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-400">Chargement...</td>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-400">{{ __('Loading...') }}</td>
                     </tr>
                 </tbody>
             </table>

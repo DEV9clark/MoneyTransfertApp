@@ -7,6 +7,7 @@ use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Exception;
 use App\Models\Transaction;
+use App\Services\NotificationService;
 
 class TransactionController extends Controller
 {
@@ -55,7 +56,32 @@ class TransactionController extends Controller
                 $data
             );
 
-            return response()->json([
+            if($transaction)
+            {
+                if ($request->type === 'send') 
+                {
+                    // On crée le service de notification
+                    $notificationService = new NotificationService();
+                    
+                    // On prépare les données
+                    $data = [
+                        'amount' => $transaction->amount,
+                        'currency' => $transaction->currency,
+                        'reference' => $transaction->reference,
+                        'fee' => $transaction->fee ?? 0,
+                        'sender_name' => $transaction->client->name,
+                        'sender_phone' => $transaction->client->phone,
+                        'recipient_name' => $transaction->recipient_name,
+                        'recipient_phone' => $transaction->recipient_phone,
+                    ];
+                    
+                    // On envoie les notifications
+                    $notificationService->notifySender($data);
+                    $notificationService->notifyRecipient($data);
+                }
+            }
+
+                return response()->json([
                 'message' => 'Transfer initiated',
                 'data'    => $transaction,
                 'code'    => $transaction->reference
@@ -71,11 +97,31 @@ class TransactionController extends Controller
             'code' => 'required|string',
         ]);
 
-        try {
+        try 
+        {
             $transaction = $this->transactionService->completeTransfer(
                 $request->user(),
                 $request->code
             );
+
+            if ($request->type === 'send') 
+            {
+                $notificationService = new NotificationService();
+                $data = [
+                    'amount' => $transaction->amount,
+                    'currency' => $transaction->currency,
+                    'reference' => $transaction->reference,
+                    'fee' => $transaction->fee ?? 0,
+                    'sender_name' => $transaction->client->name,
+                    'sender_phone' => $transaction->client->phone,
+                    'recipient_name' => $transaction->recipient_name,
+                    'recipient_phone' => $transaction->recipient_phone,
+                ];
+                
+                // On envoie les notifications
+                $notificationService->notifySender($data);
+                $notificationService->notifyRecipient($data);
+            }
 
             return response()->json([
                 'message' => 'Transfer completed',
@@ -119,27 +165,34 @@ class TransactionController extends Controller
     {
         $request->validate(['code' => 'required|string']);
 
+        $notificationService = new NotificationService();
+
         $transaction = Transaction::where('reference', $request->code)
             ->where('status', 'pending')
             ->where('type', 'send') // Only send transactions can be withdrawn
             ->with('client') // Load sender info
             ->first();
 
-        if (!$transaction) {
+        if (!$transaction) 
+        {
             return response()->json(['message' => 'Invalid or already processed code.'], 404);
         }
 
+        $data = [
+            'reference' => $transaction->reference,
+            'amount' => $transaction->amount,
+            'currency' => $transaction->currency,
+            'sender' => $transaction->client->name,
+            'sender_phone' => $transaction->client->phone,
+            'recipient_name' => $transaction->recipient_name,
+            'recipient_phone' => $transaction->recipient_phone,
+            'created_at' => $transaction->created_at->format('Y-m-d H:i')
+        ];
+
+        $notificationService->notifyWithdrawal($data);
+
         return response()->json([
-            'data' => [
-                'reference' => $transaction->reference,
-                'amount' => $transaction->amount,
-                'currency' => $transaction->currency,
-                'sender' => $transaction->client->name,
-                'sender_phone' => $transaction->client->phone,
-                'recipient_name' => $transaction->recipient_name,
-                'recipient_phone' => $transaction->recipient_phone,
-                'created_at' => $transaction->created_at->format('Y-m-d H:i')
-            ]
+            'data' => $data
         ]);
     }
 
@@ -153,6 +206,32 @@ class TransactionController extends Controller
         return response()->json(['count' => $count]);
     }
 
+    public function pendingList()
+    {
+        // Get list of pending transactions (type=send, status=pending)
+        $transactions = Transaction::where('status', 'pending')
+            ->where('type', 'send')
+            ->with('client')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'data' => $transactions->map(function ($t) {
+                return [
+                    'reference' => $t->reference,
+                    'amount' => $t->amount,
+                    'currency' => $t->currency,
+                    'sender' => $t->client->name ?? 'Unknown',
+                    'sender_phone' => $t->client->phone ?? '',
+                    'recipient_name' => $t->recipient_name,
+                    'recipient_phone' => $t->recipient_phone,
+                    'created_at' => $t->created_at->format('Y-m-d H:i'),
+                ];
+            })
+        ]);
+    }
+
     public function stats(Request $request)
     {
         $filter = $request->get('filter', 'day'); // day, week, month, year
@@ -160,9 +239,6 @@ class TransactionController extends Controller
         
         $query = Transaction::query();
         
-        // Apply Currency Filter
-        $query->where('currency', $currency);
-
         // Apply Time Filter
         switch ($filter) {
             case 'week':
@@ -180,30 +256,25 @@ class TransactionController extends Controller
                 break;
         }
 
-        // Calculate Stats
-        $volume = $query->sum('amount');
-        $count = $query->count();
-        $fees = 0;
+        // Clone query for fees
+        $feesQuery = clone $query;
 
-        // Only calculate fees if user is admin
+        // Group by currency and sum volume
+        $volumes = $query->select('currency', \Illuminate\Support\Facades\DB::raw('SUM(amount) as volume'))
+            ->groupBy('currency')
+            ->get();
+            
+        // Group by currency and sum fees (Admin only)
+        $fees = [];
         if ($request->user()->role === 'admin') {
-            // Calculate fees: sum of (total_amount - amount) for 'send' transactions
-            // Alternatively, use a stored 'fee_amount' column if it exists.
-            // Based on previous code, we calculate fee dynamically but don't seem to store it explicitly as 'fee_amount' in the database schema yet, 
-            // wait, looking at the transfer method:
-            // 'fee_amount' => $fee, 
-            // 'total_amount' => $total,
-            // These seem to be passed to initateTransfer. Let's assume they are stored in JSON or columns.
-            // I'll check migration later, but for now let's sum 'fee' column if it exists or do the math.
-            // Checking migration 2026_01_31_071506_add_details_to_transactions_table.php ...
-            // It added 'fee_amount' and 'total_amount'.
-            $fees = $query->sum('fee_amount'); 
+            $fees = $feesQuery->select('currency', \Illuminate\Support\Facades\DB::raw('SUM(fee_amount) as fees'))
+                ->groupBy('currency')
+                ->get();
         }
 
         return response()->json([
-            'volume' => $volume,
-            'count' => $count,
-            'fees' => $fees,
+            'volumes' => $volumes, // [{currency: 'USD', volume: 100}, ...]
+            'fees' => $fees,       // [{currency: 'USD', fees: 10}, ...]
             'filter' => $filter
         ]);
     }

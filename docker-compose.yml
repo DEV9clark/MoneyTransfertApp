@@ -18,7 +18,7 @@ services:
     container_name: money_transfer_nginx
     restart: unless-stopped
     ports:
-      - "8000:80"
+      - "8080:80"
     volumes:
       - ./backend:/var/www
       - ./docker/nginx/conf.d:/etc/nginx/conf.d

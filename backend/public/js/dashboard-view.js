@@ -7,38 +7,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     const rateMap = typeof RATES !== 'undefined' ? RATES : { 'USD': 1, 'EUR': 0.92, 'XOF': 600 };
     const symbolMap = typeof SYMBOLS !== 'undefined' ? SYMBOLS : { 'USD': '$', 'EUR': '€', 'XOF': 'CFA' };
 
-    function formatMoney(amount) {
-        const rate = rateMap[currentCurrency] || 1;
-        const symbol = symbolMap[currentCurrency] || '$';
-        const converted = amount * rate;
+    function convertAmount(amount, fromCurrency, toCurrency) {
+        if (fromCurrency === toCurrency) return parseFloat(amount);
 
+        // Base is XOF (from rateMap logic: XOF: 600, USD: 1. So Base is USD actually?)
+        // Let's check rateMap: { 'USD': 1, 'EUR': 0.92, 'XOF': 600 }
+        // This implies USD is base 1.
+        // Amount / Rate_From = BaseUSD
+        // BaseUSD * Rate_To = Target
+        const base = parseFloat(amount) / (rateMap[fromCurrency] || 1);
+        const target = base * (rateMap[toCurrency] || 1);
+        return target;
+    }
+
+    function formatMoney(amount, currency = currentCurrency, compact = false) {
         return new Intl.NumberFormat('fr-FR', {
             style: 'currency',
-            currency: currentCurrency === 'XOF' ? 'XOF' : (currentCurrency === 'EUR' ? 'EUR' : 'USD')
-        }).format(converted);
+            currency: currency,
+            notation: compact ? 'compact' : 'standard',
+            maximumFractionDigits: compact ? 1 : 2
+        }).format(amount);
     }
 
     async function renderDashboard() {
         if (!transactionsData.length) return;
 
-        // Total Volume
-        const totalVolume = transactionsData.reduce((acc, t) => acc + parseFloat(t.amount), 0);
-        document.getElementById('stat-volume').innerText = formatMoney(totalVolume);
-
         // Render Table
         const tableBody = document.getElementById('transactions-table-body');
         tableBody.innerHTML = '';
 
-        transactionsData.slice(0, 5).forEach(t => { // Show last 5
+        // Show ALL transactions
+        const transactionsToShow = transactionsData;
+
+        if (transactionsToShow.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">Aucune transaction trouvée.</td></tr>`;
+            return;
+        }
+
+        transactionsToShow.slice(0, 5).forEach(t => { // Show last 5
+            const convertedAmount = convertAmount(t.amount, t.currency, currentCurrency);
+
             const row = `
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4 text-sm font-medium text-gray-900">#${t.reference || 'N/A'}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">
-                        ${t.client ? t.client.name : 'Unknown'}
+                        ${t.client ? t.client.name : 'Inconnu'}
                         <span class="block text-xs text-gray-400">${t.client ? t.client.phone : ''}</span>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-600 capitalize">${t.type}</td>
-                    <td class="px-6 py-4 text-sm font-bold text-gray-900 text-right">${formatMoney(t.amount)}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-gray-900 text-right">
+                        ${formatMoney(convertedAmount, currentCurrency)}
+                        <span class="block text-xs text-gray-400 font-normal">(${formatMoney(t.amount, t.currency)})</span>
+                    </td>
                     <td class="px-6 py-4">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(t.status)}">
                             ${t.status}
@@ -54,15 +74,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Listen for global currency change
     window.addEventListener('currencyChanged', (e) => {
         currentCurrency = e.detail.currency;
-        // Re-fetch stats with new currency (keeping current filter)
-        // We need to know the current filter. Let's store it globally or read from active button.
-        // For simplicity, default to 'day' or find active. 
-        // Better: let's track activeFilter variable.
         const activeFilter = document.querySelector('button[id^="filter-"].bg-white')?.id.replace('filter-', '') || 'day';
         fetchStats(activeFilter);
-
-        // Also re-render table if needed (amount formatting)
-        renderDashboard();
+        renderDashboard(); // Re-render table with conversions
     });
 
     // Helper to fetch stats
@@ -70,19 +84,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             // Get current currency from state or localstorage
             const currency = localStorage.getItem('selected_currency') || 'USD';
-
-            const res = await fetch(`/api/transactions/stats?filter=${filter}&currency=${currency}`);
+            // Note: currency param is no longer used by backend for filtering, but we keep it or ignore it.
+            const res = await fetch(`/api/transactions/stats?filter=${filter}`);
             const data = await res.json();
 
-            // Update Volume
-            document.getElementById('stat-volume').innerText = formatMoney(data.volume) + ' ' + currency;
+            // Aggregation Logic
+            let totalVolumeRef = 0;
+            if (data.volumes) {
+                data.volumes.forEach(item => {
+                    totalVolumeRef += convertAmount(item.volume, item.currency, currency);
+                });
+            }
+            // Use compact notation for stats cards
+            document.getElementById('stat-volume').innerText = formatMoney(totalVolumeRef, currency, true);
 
-            // Update Profit (if exists)
+            // Profit
+            let totalFeesRef = 0;
             const profitEl = document.getElementById('stat-profit');
-            if (profitEl) {
-                // If the data.fees is in the requested currency, just display it.
-                // Note: The API sums the fee_amount for transactions of this currency.
-                profitEl.innerText = formatMoney(data.fees) + ' ' + currency;
+            if (profitEl && data.fees) {
+                data.fees.forEach(item => {
+                    totalFeesRef += convertAmount(item.fees, item.currency, currency);
+                });
+                profitEl.innerText = formatMoney(totalFeesRef, currency, true);
             }
 
             // Highlight active button

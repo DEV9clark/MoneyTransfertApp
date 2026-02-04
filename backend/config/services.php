@@ -20,6 +20,13 @@ return [
         'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
     ],
 
+    'twilio' => [
+        'sid' => env('TWILIO_SID'),              // Identifiant du compte
+        'token' => env('TWILIO_AUTH_TOKEN'),     // Mot de passe API  
+        'phone' => env('TWILIO_PHONE_NUMBER'),   // Numéro qui envoie les SMS
+        'whatsapp' => env('TWILIO_WHATSAPP_NUMBER'), // Numéro WhatsApp
+    ],
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],

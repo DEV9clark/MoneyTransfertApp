@@ -1,26 +1,26 @@
 @extends('layouts.app')
 
-@section('title', 'Clients')
-@section('header', 'Client Management')
+@section('title', __('Clients'))
+@section('header', __('Client Management'))
 
 @section('content')
     <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
         <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-            <h2 class="text-lg font-semibold text-gray-800">All Clients</h2>
+            <h2 class="text-lg font-semibold text-gray-800">{{ __('All Clients') }}</h2>
             <button onclick="openClientModal()" class="bg-primary hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                Add Client
+                {{ __('Add Client') }}
             </button>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full whitespace-nowrap">
                 <thead>
                     <tr class="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <th class="px-6 py-3">Name</th>
-                        <th class="px-6 py-3">Phone</th>
-                        <th class="px-6 py-3">Country</th>
-                        <th class="px-6 py-3 text-center">Tx Count</th>
-                        <th class="px-6 py-3 text-right">Actions</th>
+                        <th class="px-6 py-3">{{ __('Name') }}</th>
+                        <th class="px-6 py-3">{{ __('Phone') }}</th>
+                        <th class="px-6 py-3">{{ __('Country') }}</th>
+                        <th class="px-6 py-3 text-center">{{ __('Tx Count') }}</th>
+                        <th class="px-6 py-3 text-right">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100" id="clients-table-body">
@@ -37,23 +37,23 @@
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Add New Client</h3>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">{{ __('Add New Client') }}</h3>
                     <form id="clientForm" class="mt-4 space-y-4">
                         <input type="hidden" id="clientId">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                            <label class="block text-sm font-medium text-gray-700">{{ __('Full Name') }}</label>
                             <input type="text" id="name" name="name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm p-2 border" required>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Phone Number</label>
+                            <label class="block text-sm font-medium text-gray-700">{{ __('Phone Number') }}</label>
                             <input type="text" id="phone" name="phone" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm p-2 border" required>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Email (Optional)</label>
+                            <label class="block text-sm font-medium text-gray-700">{{ __('Email (Optional)') }}</label>
                             <input type="email" id="email" name="email" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm p-2 border">
                         </div>
                          <div>
-                            <label class="block text-sm font-medium text-gray-700">Country</label>
+                            <label class="block text-sm font-medium text-gray-700">{{ __('Country') }}</label>
                             <select id="country_id" name="country_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md border" required>
                                 <!-- Populated by JS -->
                             </select>
@@ -62,10 +62,10 @@
                 </div>
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                     <button type="button" onclick="saveClient()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm">
-                        Save Client
+                        {{ __('Save Client') }}
                     </button>
                     <button type="button" onclick="closeClientModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                        Cancel
+                        {{ __('Cancel') }}
                     </button>
                 </div>
             </div>
