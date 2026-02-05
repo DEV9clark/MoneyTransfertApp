@@ -61,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/transfer', [App\Http\Controllers\Api\TransactionController::class, 'transfer']);
     Route::post('/withdraw', [App\Http\Controllers\Api\TransactionController::class, 'withdraw']);
     Route::get('/balance', [App\Http\Controllers\Api\TransactionController::class, 'balance']);
+    Route::get('/balance', [App\Http\Controllers\Api\TransactionController::class, 'balance']);
     Route::get('/transactions', [App\Http\Controllers\Api\TransactionController::class, 'history']);
     
     // Additional Mobile/API Endpoints
@@ -69,5 +70,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/transactions/pending-count', [App\Http\Controllers\Api\TransactionController::class, 'pendingCount']);
     Route::post('/transactions/calculate-fees', [App\Http\Controllers\Api\TransactionController::class, 'calculateFees']);
     Route::post('/transactions/verify', [App\Http\Controllers\Api\TransactionController::class, 'verifyCode']);
-    Route::apiResource('/clients', App\Http\Controllers\Api\ClientController::class);
+    Route::get('/clients', [App\Http\Controllers\Api\ClientController::class, 'index']);
 });

@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
   // Use 10.0.2.2 for Android Emulator, localhost for iOS Simulator
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
+  static const String baseUrl = 'http://localhost:8080/api';
   final storage = const FlutterSecureStorage();
 
   Future<String?> getToken() async {
@@ -93,8 +93,30 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> transfer(String clientName, String clientPhone, double amount) async {
+  Future<Map<String, dynamic>> transfer({
+    required String clientName,
+    required String clientPhone,
+    required double amount,
+    required String type, // 'send' or 'withdraw'
+    String? destination,
+    String? recipientName,
+    String? recipientPhone,
+  }) async {
     final token = await getToken();
+    
+    final Map<String, dynamic> body = {
+      'client_name': clientName,
+      'client_phone': clientPhone,
+      'amount': amount,
+      'type': type,
+    };
+
+    if (type == 'send') {
+       body['destination'] = destination ?? 'Senegal'; // Default or required
+       body['recipient_name'] = recipientName;
+       body['recipient_phone'] = recipientPhone;
+    }
+
     final response = await http.post(
       Uri.parse('$baseUrl/transfer'),
       headers: {
@@ -102,11 +124,7 @@ class ApiService {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'client_name': clientName,
-        'client_phone': clientPhone,
-        'amount': amount
-      }),
+      body: jsonEncode(body),
     );
 
     if (response.statusCode == 200) {
