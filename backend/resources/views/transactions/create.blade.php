@@ -261,7 +261,7 @@
         closeModal();
         
         try {
-             const res = await fetch('/api/transactions/withdraw', {
+             const res = await fetch("{{ url('/api/transactions/withdraw') }}", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 body: JSON.stringify({ code })
@@ -292,7 +292,7 @@
 
         searchTimeout = setTimeout(async () => {
             try {
-                const res = await fetch(`/api/clients/search?query=${query}`);
+                const res = await fetch(`{{ url('/api/clients/search') }}?query=${query}`);
                 const clients = await res.json();
                 
                 const resultsDiv = document.getElementById('client_results');
@@ -349,7 +349,7 @@
         }
 
         try {
-            const res = await fetch('/api/transactions/calculate-fees', {
+            const res = await fetch("{{ url('/api/transactions/calculate-fees') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -403,7 +403,7 @@
                     recipient_phone: document.getElementById('recipient_phone').value,
                 };
 
-                const res = await fetch('/api/transactions', {
+                const res = await fetch("{{ url('/api/transactions') }}", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                     body: JSON.stringify(formData)
@@ -421,7 +421,7 @@
                 if (!code) throw new Error("Please enter the transaction code.");
 
                 // Call Verify Endpoint
-                const res = await fetch('/api/transactions/verify', {
+                const res = await fetch("{{ url('/api/transactions/verify') }}", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                     body: JSON.stringify({ code })

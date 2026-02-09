@@ -12,6 +12,8 @@ services:
       - ./backend:/var/www
     networks:
       - app-network
+    ports:
+      - "9000:9000"
 
   nginx:
     image: nginx:alpine
@@ -37,7 +39,7 @@ services:
       MYSQL_PASSWORD: password
       MYSQL_USER: user
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - dbdata:/var/lib/mysql
     networks:

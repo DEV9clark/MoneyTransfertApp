@@ -76,8 +76,8 @@
 @push('scripts')
 <script>
     // Simple Client Manager JS
-    const API_URL = '/api/clients';
-    const COUNTRY_API_URL = '/api/countries'; // Assuming we have this or iterate a static list for now, actually we don't have country api yet but I will simulate or fetch from a new endpoint.
+    const API_URL = "{{ url('/api/clients') }}";
+    const COUNTRY_API_URL = "{{ url('/api/countries') }}"; // Assuming we have this or iterate a static list for now, actually we don't have country api yet but I will simulate or fetch from a new endpoint.
 
     document.addEventListener('DOMContentLoaded', () => {
         loadClients();
