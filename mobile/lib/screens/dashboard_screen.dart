@@ -164,19 +164,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildActionButton(
-                            context,
-                            'Send Money',
-                            Icons.send_rounded,
-                            AppTheme.accentTeal,
-                            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SendMoneyScreen())).then((_) => _loadData()),
+                          Expanded(
+                            child: _buildActionButton(
+                              context,
+                              'Send Money',
+                              Icons.send_rounded,
+                              AppTheme.accentTeal,
+                              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SendMoneyScreen())).then((_) => _loadData()),
+                            ),
                           ),
-                          _buildActionButton(
-                            context,
-                            'Withdraw',
-                            Icons.arrow_circle_down_rounded,
-                            Colors.orangeAccent,
-                            () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WithdrawScreen())).then((_) => _loadData()),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: _buildActionButton(
+                              context,
+                              'Withdraw',
+                              Icons.arrow_circle_down_rounded,
+                              Colors.orangeAccent,
+                              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WithdrawScreen())).then((_) => _loadData()),
+                            ),
                           ),
                         ],
                       ),
@@ -278,7 +283,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.43,
+        // width was removed to allow Expanded to control width
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.05),

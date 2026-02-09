@@ -319,13 +319,13 @@ class _WithdrawScreenState extends State<WithdrawScreen> with TickerProviderStat
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [AppTheme.primaryBlue.withOpacity(0.8), AppTheme.primaryPurple],
+                colors: [AppTheme.primaryBlue.withValues(alpha: 0.8), AppTheme.primaryPurple],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
-                   color: AppTheme.primaryPurple.withOpacity(0.4),
+                   color: AppTheme.primaryPurple.withValues(alpha: 0.4),
                    blurRadius: 20,
                    spreadRadius: 5,
                 )

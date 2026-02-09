@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Money Transfer App',
+      title: 'NISIS Transfert',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,

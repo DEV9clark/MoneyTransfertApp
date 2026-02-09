@@ -81,19 +81,19 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: AppTheme.darkBg,
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // 1. Animated Background Elements
           Positioned(
             top: -60,
             right: -60,
-            child: _buildAnimatedCircle(size.width * 0.6, AppTheme.primaryPurple.withOpacity(0.15)),
+            child: _buildAnimatedCircle(size.width * 0.6, AppTheme.primaryPurple.withValues(alpha: 0.15)),
           ),
           Positioned(
             top: size.height * 0.2,
             left: -40,
-            child: _buildAnimatedCircle(size.width * 0.4, AppTheme.primaryBlue.withOpacity(0.1), delay: 2.0),
+            child: _buildAnimatedCircle(size.width * 0.4, AppTheme.primaryBlue.withValues(alpha: 0.1), delay: 2.0),
           ),
 
           // 2. Main Scrollable Content
@@ -119,14 +119,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 children: [
                                   _buildLoginIcon(),
                                   const SizedBox(height: 30),
-                                  Text(
-                                    'Welcome Back',
-                                    style: AppTheme.titleStyle.copyWith(fontSize: 28),
-                                  ),
+                                  // Text(
+                                  //   'Welcome Back',
+                                  //   style: AppTheme.titleStyle.copyWith(fontSize: 28, color: AppTheme.primaryBlue),
+                                  // ),
                                   const SizedBox(height: 10),
                                   Text(
                                     'Sign in to continue',
-                                    style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 16),
+                                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
                                   ),
                                 ],
                               ),
@@ -145,16 +145,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 filter:  ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: AppTheme.darkBg.withOpacity(0.5), // Semi-transparent Glass effect
+                                    color: Colors.white.withValues(alpha: 0.9), // White Glass effect
                                     borderRadius: const BorderRadius.only(
                                       topLeft: Radius.circular(50),
                                       topRight: Radius.circular(50),
                                     ),
-                                    border: Border(
-                                      top: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
-                                      left: BorderSide(color: Colors.white.withOpacity(0.05), width: 0.5),
-                                      right: BorderSide(color: Colors.white.withOpacity(0.05), width: 0.5),
-                                    ),
+                                    border: Border.all(color: Colors.grey.withValues(alpha: 0.2), width: 1),
                                   ),
 
                               padding: const EdgeInsets.fromLTRB(30, 50, 30, 30),
@@ -164,17 +160,17 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                   // Email Field
                                   Text(
                                     'Email',
-                                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Colors.grey[800], fontSize: 14, fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 10),
                                   _buildInputContainer(
                                     child: TextField(
                                       controller: _emailController,
-                                      style: const TextStyle(color: Colors.white),
+                                      style: const TextStyle(color: Colors.black87),
                                       decoration: const InputDecoration(
                                         border: InputBorder.none,
                                         hintText: 'user@example.com',
-                                        hintStyle: TextStyle(color: Colors.white24),
+                                        hintStyle: TextStyle(color: Colors.black38),
                                         icon: Icon(Icons.email_outlined, color: AppTheme.accentTeal),
                                       ),
                                       keyboardType: TextInputType.emailAddress,
@@ -186,23 +182,23 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                   // Password Field
                                   Text(
                                     'Password',
-                                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Colors.grey[800], fontSize: 14, fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 10),
                                   _buildInputContainer(
                                     child: TextField(
                                       controller: _passwordController,
                                       obscureText: !_isPasswordVisible,
-                                      style: const TextStyle(color: Colors.white),
+                                      style: const TextStyle(color: Colors.black87),
                                       decoration: InputDecoration(
                                         border: InputBorder.none,
                                         hintText: '••••••••',
-                                        hintStyle: const TextStyle(color: Colors.white24),
+                                        hintStyle: const TextStyle(color: Colors.black38),
                                         icon: const Icon(Icons.lock_outline, color: AppTheme.accentTeal),
                                         suffixIcon: IconButton(
                                           icon: Icon(
                                             _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                                            color: Colors.white38,
+                                            color: Colors.black38,
                                           ),
                                           onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
                                         ),
@@ -217,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                       onPressed: () {},
                                       child: Text(
                                         'Forgot Password?',
-                                        style: TextStyle(color: AppTheme.primaryPurple.withOpacity(0.8), fontWeight: FontWeight.w600),
+                                        style: TextStyle(color: AppTheme.primaryPurple.withValues(alpha: 0.8), fontWeight: FontWeight.w600),
                                       ),
                                     ),
                                   ),
@@ -235,7 +231,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                             borderRadius: BorderRadius.circular(20),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: AppTheme.primaryBlue.withOpacity(0.5),
+                                                color: AppTheme.primaryBlue.withValues(alpha: 0.5),
                                                 blurRadius: 15,
                                                 offset: const Offset(0, 8),
                                               ),
@@ -248,7 +244,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                               shadowColor: Colors.transparent,
                                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                             ),
-                                            child: const Text('LOGIN', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                                            child: const Text(
+                                              'LOGIN',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 1.5,
+                                                color: Colors.white,
+                                              ),
+                                            ),
                                           ),
                                         ),
 
@@ -259,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Text("Don't have an account? ", style: TextStyle(color: Colors.white.withOpacity(0.6))),
+                                        Text("Don't have an account? ", style: TextStyle(color: Colors.grey[600])),
                                         GestureDetector(
                                           onTap: () {
                                             // Navigation to register
@@ -299,9 +303,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Widget _buildInputContainer({required Widget child}) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.darkBg,
+        color: Colors.grey[100],
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       child: child,
@@ -344,7 +348,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       width: 250,
       height: 250,
       child: Image.asset(
-        'assets/images/login_illustration.png',
+        'assets/images/login_illustration_transparent.png',
         fit: BoxFit.contain,
       ),
     );
