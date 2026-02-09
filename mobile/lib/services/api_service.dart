@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
   // Use 10.0.2.2 for Android Emulator, localhost for iOS Simulator
-  static const String baseUrl = 'http://localhost:8080/api';
+  static const String baseUrl = 'https://findsolution.site/money_transfer_app/api';
   final storage = const FlutterSecureStorage();
 
   Future<String?> getToken() async {
