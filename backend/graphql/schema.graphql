@@ -12,6 +12,19 @@ type Query {
     transaction(id: ID @eq): Transaction @find
 
     wallets: [Wallet!]! @all
+    
+    countries: [Country!]! @all
+    country(id: ID @eq): Country @find
+}
+
+type Country {
+    id: ID!
+    name: String!
+    code: String!
+    currency: String!
+    phone_code: String!
+    created_at: DateTime!
+    updated_at: DateTime!
 }
 
 type User {
