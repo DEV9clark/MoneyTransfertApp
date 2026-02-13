@@ -1,0 +1,262 @@
+/**
+ * Styles pour l'édition inline
+ * Fichier: inline-edit.css
+ */
+
+/* ============================================
+   Styles pour les champs éditables
+   ============================================ */
+
+.editable-field {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border-radius: 0.25rem;
+    display: inline-block;
+}
+
+/* Effet hover pour indiquer que le champ est éditable */
+.editable-field:hover {
+    background-color: #fef3c7; /* yellow-50 */
+    padding: 0.25rem 0.5rem;
+}
+
+/* Ajouter un indicateur visuel (icône crayon) au survol */
+.editable-field:hover::after {
+    content: "✏️";
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+    opacity: 0.6;
+}
+
+/* État en cours d'édition */
+.editable-field.editing {
+    background-color: transparent;
+    padding: 0;
+}
+
+.editable-field.editing:hover::after {
+    display: none;
+}
+
+/* ============================================
+   Styles pour l'input d'édition
+   ============================================ */
+
+.inline-edit-input {
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    font-size: inherit;
+    font-family: inherit;
+    border: 2px solid #3b82f6; /* blue-500 */
+    border-radius: 0.375rem;
+    outline: none;
+    background-color: #ffffff;
+    transition: all 0.2s ease-in-out;
+}
+
+.inline-edit-input:focus {
+    border-color: #2563eb; /* blue-600 */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ============================================
+   Animations de succès/erreur
+   ============================================ */
+
+@keyframes successPulse {
+    0% {
+        background-color: #d1fae5; /* green-100 */
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+@keyframes errorShake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-5px);
+    }
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+.bg-green-100 {
+    animation: successPulse 1s ease-in-out;
+}
+
+/* ============================================
+   Notifications Toast
+   ============================================ */
+
+.toast-notification {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    color: white;
+    font-weight: 500;
+    z-index: 9999;
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toast-notification.success {
+    background-color: #10b981; /* green-500 */
+}
+
+.toast-notification.error {
+    background-color: #ef4444; /* red-500 */
+}
+
+.toast-notification.info {
+    background-color: #3b82f6; /* blue-500 */
+}
+
+.toast-notification.warning {
+    background-color: #f59e0b; /* amber-500 */
+}
+
+/* Animation d'entrée */
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Animation de sortie */
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+.toast-notification {
+    animation: slideInRight 0.3s ease-out;
+}
+
+/* ============================================
+   Loader/Spinner
+   ============================================ */
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+    /* Sur mobile, agrandir la zone cliquable */
+    .editable-field {
+        padding: 0.5rem;
+        min-width: 100px;
+    }
+    
+    .inline-edit-input {
+        font-size: 16px; /* Éviter le zoom automatique sur iOS */
+    }
+    
+    /* Toast plus petit sur mobile */
+    .toast-notification {
+        right: 0.5rem;
+        left: 0.5rem;
+        top: 0.5rem;
+    }
+}
+
+/* ============================================
+   Thème sombre (optionnel)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    .editable-field:hover {
+        background-color: #374151; /* gray-700 */
+    }
+    
+    .inline-edit-input {
+        background-color: #1f2937; /* gray-800 */
+        color: #f9fafb; /* gray-50 */
+        border-color: #6366f1; /* indigo-500 */
+    }
+    
+    .inline-edit-input:focus {
+        border-color: #818cf8; /* indigo-400 */
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+}
+
+/* ============================================
+   Accessibilité
+   ============================================ */
+
+/* Focus visible pour navigation au clavier */
+.editable-field:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Réduire les animations pour les utilisateurs qui préfèrent */
+@media (prefers-reduced-motion: reduce) {
+    .editable-field,
+    .inline-edit-input,
+    .toast-notification {
+        transition: none;
+        animation: none;
+    }
+}
+
+/* ============================================
+   Styles utilitaires
+   ============================================ */
+
+/* Pour les tableaux */
+table .editable-field {
+    display: block;
+    width: 100%;
+}
+
+/* Pour les listes */
+ul .editable-field,
+ol .editable-field {
+    display: inline-block;
+}
+
+/* Indicateur de chargement */
+.editable-field.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.editable-field.loading::before {
+    content: "⏳";
+    margin-right: 0.5rem;
+}

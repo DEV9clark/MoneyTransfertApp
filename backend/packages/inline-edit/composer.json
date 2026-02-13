@@ -1,0 +1,46 @@
+{
+    "name": "money-transfer/inline-edit",
+    "description": "Édition inline générique pour Laravel - Double-clic pour éditer, sauvegarde automatique via API",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "inline-edit",
+        "editable",
+        "ajax"
+    ],
+    "authors": [
+        {
+            "name": "Money Transfer App",
+            "email": "dev@moneytransfer.com"
+        }
+    ],
+    "require": {
+        "php": "^8.0|^8.1|^8.2",
+        "illuminate/support": "^9.0|^10.0|^11.0",
+        "illuminate/http": "^9.0|^10.0|^11.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^7.0|^8.0|^9.0",
+        "phpunit/phpunit": "^9.0|^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "MoneyTransfer\\InlineEdit\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MoneyTransfer\\InlineEdit\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "MoneyTransfer\\InlineEdit\\InlineEditServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
