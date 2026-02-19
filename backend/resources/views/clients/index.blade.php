@@ -79,6 +79,8 @@
     const API_URL = "{{ url('/api/clients') }}";
     const COUNTRY_API_URL = "{{ url('/api/countries') }}"; // Assuming we have this or iterate a static list for now, actually we don't have country api yet but I will simulate or fetch from a new endpoint.
 
+    let allClients = [];
+
     document.addEventListener('DOMContentLoaded', () => {
         loadClients();
         loadCountries();
@@ -90,6 +92,7 @@
             const res = await fetch(API_URL);
             if (!res.ok) throw new Error('API Error');
             const clients = await res.json();
+            allClients = clients; // Store globally
             renderTable(clients);
         } catch (e) {
             console.warn('Using mock data for clients');
@@ -144,15 +147,22 @@
         `).join('') || '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-400">No clients found</td></tr>';
     }
 
+    function editClient(id) {
+        const client = allClients.find(c => c.id == id);
+        if (!client) return;
+
+        openClientModal(client);
+    }
+
     function openClientModal(client = null) {
         document.getElementById('clientModal').classList.remove('hidden');
         if (client) {
              document.getElementById('modal-title').innerText = 'Edit Client';
              document.getElementById('clientId').value = client.id;
              document.getElementById('name').value = client.name;
-             document.getElementById('email').value = client.email;
+             document.getElementById('email').value = client.email || '';
              document.getElementById('phone').value = client.phone;
-             document.getElementById('country_id').value = client.country_id;
+             document.getElementById('country_id').value = client.country_id || '';
         } else {
              document.getElementById('modal-title').innerText = 'Add New Client';
              document.getElementById('clientForm').reset();
@@ -188,6 +198,30 @@
 
         closeClientModal();
         loadClients();
+    }
+
+    async function deleteClient(id) {
+        if (!confirm('Are you sure you want to delete this client?')) return;
+
+        try {
+            const res = await fetch(`${API_URL}/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                }
+            });
+
+            if (res.ok) {
+                loadClients();
+            } else {
+                alert('Failed to delete client');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Error deleting client');
+        }
     }
 </script>
 @endpush

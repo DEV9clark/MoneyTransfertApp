@@ -117,7 +117,8 @@
         const data = Object.fromEntries(formData.entries());
         
         try {
-            const url = id ? `/tariffs/${id}` : '/tariffs';
+            const baseUrl = "{{ url('/tariffs') }}";
+            const url = id ? `${baseUrl}/${id}` : baseUrl;
             const method = id ? 'PUT' : 'POST';
             
             const res = await fetch(url, {
@@ -140,7 +141,7 @@
     async function deleteTariff(id) {
         if(!confirm('Are you sure?')) return;
         try {
-            await fetch(`/tariffs/${id}`, {
+            await fetch(`{{ url('/tariffs') }}/${id}`, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
             });

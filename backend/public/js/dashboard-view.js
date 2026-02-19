@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const api = new DashboardApi();
+    const api = new DashboardApi('/money_transfer_app/');
     let transactionsData = [];
 
     // Currency Logic
@@ -71,7 +71,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Get current currency from state or localstorage
             const currency = localStorage.getItem('selected_currency') || 'USD';
 
-            const res = await fetch(`/api/transactions/stats?filter=${filter}&currency=${currency}`);
+            const res = await fetch(`/money_transfer_app/api/transactions/stats?filter=${filter}&currency=${currency}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            });
             const data = await res.json();
 
             // Update Volume
