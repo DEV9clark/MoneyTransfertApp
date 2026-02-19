@@ -85,17 +85,72 @@
     });
 
     async function loadClients() {
-        // Mock data if API fails (since Docker might be down)
         try {
-            const res = await fetch(API_URL);
-            if (!res.ok) throw new Error('API Error');
-            const clients = await res.json();
+            const query = `{
+                clients {
+                    id
+                    uuid
+                    name
+                    email
+                    phone
+                    country_id
+                }
+            }`;
+            
+            const res = await fetch('/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ query })
+            });
+            
+            if (!res.ok) throw new Error('GraphQL Error');
+            const result = await res.json();
+            if (result.errors) {
+                console.error('GraphQL errors:', result.errors);
+                throw new Error(result.errors[0].message);
+            }
+            const clients = result.data.clients;
             renderTable(clients);
         } catch (e) {
-            console.warn('Using mock data for clients');
-             renderTable([]);
+            console.error('Error loading clients:', e);
+            renderTable([]);
         }
     }
+    
+     // ============================================
+    // NOUVEAU: Initialiser l'édition inline
+    // ============================================
+    initInlineEdit({
+        selector: '.editable-field',
+        apiEndpoint: '/api/clients',
+        method: 'PATCH',
+        onSave: (result, id, field, value) => {
+            console.log('Client mise à jour:', { id, field, value });
+
+            // Mettre à jour les données locales
+            const transaction = transactionsData.find(t => t.id == id);
+            if (transaction) {
+                // Mettre à jour le champ modifié
+                if (field.includes('.')) {
+                    // Champ imbriqué (ex: client.name)
+                    const parts = field.split('.');
+                    let obj = transaction;
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        obj = obj[parts[i]];
+                    }
+                    obj[parts[parts.length - 1]] = value;
+                } else {
+                    transaction[field] = value;
+                }
+            }
+        },
+        onError: (error, id, field) => {
+            console.error('✗ Erreur de mise à jour:', { id, field, error });
+        }
+    });
     
     // Temporary mock for countries since we didn't create Country API yet
     async function loadCountries() {
@@ -128,20 +183,32 @@
                             <span class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">${client.name.charAt(0)}</span>
                         </div>
                         <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">${client.name}</div>
-                            <div class="text-sm text-gray-500">${client.email || ''}</div>
+                            <div class="text-sm font-medium text-gray-900 editable-field cursor-pointer hover:bg-yellow-50 px-2 py-1 rounded transition-colors" 
+                                 data-id="${client.id}" 
+                                 data-model="client"
+                                 data-field="name"
+                                 title="Double-cliquez pour éditer">${client.name}</div>
+                            <div class="text-sm text-gray-500 editable-field cursor-pointer hover:bg-yellow-50 px-2 py-1 rounded transition-colors" 
+                                 data-id="${client.id}" 
+                                 data-model="client"
+                                 data-field="email"
+                                 title="Double-cliquez pour éditer">${client.email || 'Aucun email'}</div>
                         </div>
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${client.phone}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${client.country ? client.country.name : '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-gray-700">${client.transactions_count || 0}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 editable-field cursor-pointer hover:bg-yellow-50 px-2 py-1 rounded transition-colors" 
+                    data-id="${client.id}" 
+                    data-model="client"
+                    data-field="phone"
+                    title="Double-cliquez pour éditer">${client.phone}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-bold text-gray-700">-</td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button onclick="editClient(${client.id})" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
                     <button onclick="deleteClient(${client.id})" class="text-red-600 hover:text-red-900">Delete</button>
                 </td>
             </tr>
-        `).join('') || '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-400">No clients found</td></tr>';
+        `).join('') || '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-400">No clients found</td></tr>';
     }
 
     function openClientModal(client = null) {
@@ -189,5 +256,156 @@
         closeClientModal();
         loadClients();
     }
+
+    // Initialiser l'édition inline pour les clients avec GraphQL
+    document.addEventListener('DOMContentLoaded', () => {
+        let currentEditingElement = null;
+        let originalValue = '';
+
+        // Double-clic pour activer l'édition
+        document.addEventListener('dblclick', (e) => {
+            const target = e.target.closest('.editable-field');
+            if (target && !target.classList.contains('editing')) {
+                enableEdit(target);
+            }
+        });
+
+        function enableEdit(element) {
+            // Annuler toute édition en cours
+            if (currentEditingElement) {
+                cancelEdit();
+            }
+
+            currentEditingElement = element;
+            originalValue = element.textContent.trim();
+
+            // Créer l'input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = originalValue === 'Aucun email' ? '' : originalValue;
+            input.className = 'px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 w-full';
+
+            // Remplacer le contenu
+            element.innerHTML = '';
+            element.appendChild(input);
+            element.classList.add('editing');
+
+            // Focus
+            input.focus();
+            input.select();
+
+            // Événements
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveEdit(element, input.value);
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit();
+                }
+            });
+
+            input.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (currentEditingElement === element) {
+                        saveEdit(element, input.value);
+                    }
+                }, 200);
+            });
+        }
+
+        async function saveEdit(element, newValue) {
+            const trimmedValue = newValue.trim();
+            
+            // Si pas de changement, annuler
+            if (trimmedValue === originalValue || (trimmedValue === '' && originalValue === 'Aucun email')) {
+                cancelEdit();
+                return;
+            }
+
+            // Afficher un loader
+            element.innerHTML = '<span class="inline-block">⏳</span>';
+
+            const id = element.dataset.id;
+            const field = element.dataset.field;
+
+            try {
+                // Construire la mutation GraphQL
+                const mutation = `
+                    mutation UpdateClient($id: ID!, $${field}: String) {
+                        updateClient(id: $id, ${field}: $${field}) {
+                            id
+                            ${field}
+                        }
+                    }
+                `;
+
+                const res = await fetch('/graphql', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: mutation,
+                        variables: { id, [field]: trimmedValue || null }
+                    })
+                });
+
+                const result = await res.json();
+
+                if (result.errors) {
+                    throw new Error(result.errors[0].message);
+                }
+
+                // Succès
+                element.textContent = trimmedValue || 'Aucun email';
+                element.classList.remove('editing');
+                currentEditingElement = null;
+
+                // Animation de succès
+                element.classList.add('bg-green-100');
+                setTimeout(() => {
+                    element.classList.remove('bg-green-100');
+                }, 1000);
+
+                // Toast de succès
+                showToast('✓ Modification enregistrée', 'success');
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                
+                // Restaurer la valeur originale
+                element.textContent = originalValue;
+                element.classList.remove('editing');
+                currentEditingElement = null;
+
+                // Toast d'erreur
+                showToast('✗ Erreur: ' + error.message, 'error');
+            }
+        }
+
+        function cancelEdit() {
+            if (!currentEditingElement) return;
+            currentEditingElement.textContent = originalValue;
+            currentEditingElement.classList.remove('editing');
+            currentEditingElement = null;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 transition-all ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.transform = 'translateX(400px)';
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+    });
+
 </script>
 @endpush

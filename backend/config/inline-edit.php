@@ -80,8 +80,8 @@ return [
     |
     */
     'allowed_models' => [
-        'App\Models\Transaction',
-        'App\Models\Client',
+        // 'App\Models\Transaction',
+        // 'App\Models\Client',
     ],
 
     /*

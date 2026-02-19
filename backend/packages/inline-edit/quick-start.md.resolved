@@ -1,0 +1,82 @@
+# Quick Start - Package Inline Edit
+
+## Installation en 6 étapes
+
+### 1️⃣ Ajouter le repository dans [composer.json](file:///Users/mac/Documents/PROJETS/money_transfer_app/backend/composer.json)
+
+```json
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../money_transfer_app/backend/packages/inline-edit"
+        }
+    ],
+    "require": {
+        "money-transfer/inline-edit": "@dev"
+    }
+}
+```
+
+### 2️⃣ Installer
+
+```bash
+composer update money-transfer/inline-edit
+```
+
+### 3️⃣ Publier les assets
+
+```bash
+php artisan vendor:publish --tag=inline-edit-assets
+php artisan vendor:publish --tag=inline-edit-config
+```
+
+### 4️⃣ Configurer le modèle
+
+```php
+use MoneyTransfer\InlineEdit\Traits\HasInlineEdit;
+
+class Transaction extends Model
+{
+    use HasInlineEdit;
+    
+    protected $inlineEditableFields = ['name', 'status'];
+}
+```
+
+### 5️⃣ Ajouter la route
+
+```php
+// routes/api.php
+use MoneyTransfer\InlineEdit\Http\Controllers\InlineEditController;
+
+Route::middleware('auth:sanctum')->patch('/{model}/{id}', 
+    [InlineEditController::class, 'update']
+);
+```
+
+### 6️⃣ Utiliser dans la vue
+
+```html
+<head>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link href="{{ asset('css/inline-edit.css') }}" rel="stylesheet">
+</head>
+<body>
+    <span class="editable-field" data-id="1" data-field="name">
+        John Doe
+    </span>
+
+    <script src="{{ asset('js/inline-edit.js') }}"></script>
+    <script>
+        initInlineEdit({
+            selector: '.editable-field',
+            apiEndpoint: '/api/transactions'
+        });
+    </script>
+</body>
+```
+
+## ✅ Terminé !
+
+Double-cliquez sur un champ pour l'éditer. Appuyez sur Entrée pour sauvegarder.

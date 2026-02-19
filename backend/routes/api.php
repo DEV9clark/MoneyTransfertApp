@@ -3,6 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use MoneyTransfer\InlineEdit\Http\Controllers\InlineEditController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -18,7 +20,13 @@ use App\Http\Controllers\Api\AuthController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-
+Route::middleware('auth:sanctum')->group(function () {
+    // Route générique pour tous les modèles
+    Route::patch('/{model}/{id}', [InlineEditController::class, 'update']);
+    
+    // Mise à jour en masse (optionnel)
+    Route::post('/bulk-update', [InlineEditController::class, 'bulkUpdate']);
+});
 
 
 Route::get('/debug-data', function() {
@@ -61,14 +69,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/transfer', [App\Http\Controllers\Api\TransactionController::class, 'transfer']);
     Route::post('/withdraw', [App\Http\Controllers\Api\TransactionController::class, 'withdraw']);
     Route::get('/balance', [App\Http\Controllers\Api\TransactionController::class, 'balance']);
-    Route::get('/balance', [App\Http\Controllers\Api\TransactionController::class, 'balance']);
     Route::get('/transactions', [App\Http\Controllers\Api\TransactionController::class, 'history']);
     
-    // Additional Mobile/API Endpoints
-    Route::get('/clients/search', [App\Http\Controllers\Api\ClientController::class, 'search']);
     Route::get('/transactions/stats', [App\Http\Controllers\Api\TransactionController::class, 'stats']);
     Route::get('/transactions/pending-count', [App\Http\Controllers\Api\TransactionController::class, 'pendingCount']);
     Route::post('/transactions/calculate-fees', [App\Http\Controllers\Api\TransactionController::class, 'calculateFees']);
     Route::post('/transactions/verify', [App\Http\Controllers\Api\TransactionController::class, 'verifyCode']);
+});
+
+// Routes accessibles via Sanctum (API mobile) ET session web (plateforme web)
+Route::middleware('auth:sanctum,web')->group(function () {
+    Route::get('/clients/search', [App\Http\Controllers\Api\ClientController::class, 'search']);
     Route::get('/clients', [App\Http\Controllers\Api\ClientController::class, 'index']);
+    Route::post('/clients', [App\Http\Controllers\Api\ClientController::class, 'store']);
+    Route::get('/clients/{client}', [App\Http\Controllers\Api\ClientController::class, 'show']);
+    Route::put('/clients/{client}', [App\Http\Controllers\Api\ClientController::class, 'update']);
+    Route::delete('/clients/{client}', [App\Http\Controllers\Api\ClientController::class, 'destroy']);
 });

@@ -18,6 +18,7 @@ class TransactionInlineEditController extends Controller
      */
     public function update(Request $request, $id)
     {
+        dd($request->all());
         try {
             // Trouver la transaction
             $transaction = Transaction::findOrFail($id);

@@ -4,10 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use MoneyTransfer\InlineEdit\Traits\HasInlineEdit;
 
 class Transaction extends Model
 {
     use HasFactory;
+    use HasInlineEdit;
+    
+    protected $inlineEditableFields = [
+        'reference',
+        'status',
+        'type',
+        'recipient_name',
+        'recipient_phone',
+        'destination',
+        'client.name', // Champ imbriqué
+    ];
 
     protected $fillable = [
         'uuid',

@@ -50,8 +50,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const row = `
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4 text-sm font-medium text-gray-900">#${t.reference || 'N/A'}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">
-                        ${t.client ? t.client.name : 'Inconnu'}
+                    <td class="px-6 py-4">
+                        <span class="editable-field text-sm font-medium text-gray-900 cursor-pointer hover:bg-yellow-50 px-2 py-1 rounded transition-colors" 
+                              data-id="${t.id}" 
+                              data-field="client.name"
+                              title="Double-cliquez pour éditer">
+                            ${t.client ? t.client.name : 'Inconnu'}
+                        </span>
                         <span class="block text-xs text-gray-400">${t.client ? t.client.phone : ''}</span>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-600 capitalize">${t.type}</td>

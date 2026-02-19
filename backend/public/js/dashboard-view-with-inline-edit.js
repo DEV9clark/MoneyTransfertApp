@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         apiEndpoint: '/api/transactions',
         method: 'PATCH',
         onSave: (result, id, field, value) => {
-            console.log('✓ Transaction mise à jour:', { id, field, value });
+            console.log('Transaction mise à jour:', { id, field, value });
 
             // Mettre à jour les données locales
             const transaction = transactionsData.find(t => t.id == id);

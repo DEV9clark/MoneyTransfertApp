@@ -14,6 +14,23 @@ type Query {
     wallets: [Wallet!]! @all
 }
 
+type Mutation {
+    updateClient(
+        id: ID! @rules(apply: ["required", "exists:clients,id"])
+        name: String @rules(apply: ["sometimes", "string", "max:255"])
+        email: String @rules(apply: ["sometimes", "email", "max:255"])
+        phone: String @rules(apply: ["sometimes", "string", "max:20"])
+        address: String @rules(apply: ["sometimes", "string", "max:255"])
+    ): Client @update @guard(with: ["web"])
+    
+    updateTransaction(
+        id: ID! @rules(apply: ["required", "exists:transactions,id"])
+        reference: String @rules(apply: ["sometimes", "string", "max:255"])
+        status: String @rules(apply: ["sometimes", "string", "in:pending,completed,failed,cancelled"])
+        type: String @rules(apply: ["sometimes", "string", "max:50"])
+    ): Transaction @update @guard(with: ["web"])
+}
+
 type User {
     id: ID!
     name: String!
@@ -25,8 +42,12 @@ type User {
 
 type Client {
     id: ID!
+    uuid: String
     name: String!
+    email: String
     phone: String!
+    address: String
+    country_id: ID
     created_at: DateTime!
     updated_at: DateTime!
     transactions: [Transaction!]! @hasMany

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "46137134a9bfc36b12ac32c0ad6f151d",
+    "content-hash": "b51a90300dcc383aef0a22a77b06232f",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -1432,16 +1432,16 @@
         },
         {
             "name": "laravel/tinker",
-            "version": "v2.11.0",
+            "version": "v2.11.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/tinker.git",
-                "reference": "3d34b97c9a1747a81a3fde90482c092bd8b66468"
+                "reference": "c9f80cc835649b5c1842898fb043f8cc098dd741"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/tinker/zipball/3d34b97c9a1747a81a3fde90482c092bd8b66468",
-                "reference": "3d34b97c9a1747a81a3fde90482c092bd8b66468",
+                "url": "https://api.github.com/repos/laravel/tinker/zipball/c9f80cc835649b5c1842898fb043f8cc098dd741",
+                "reference": "c9f80cc835649b5c1842898fb043f8cc098dd741",
                 "shasum": ""
             },
             "require": {
@@ -1492,9 +1492,9 @@
             ],
             "support": {
                 "issues": "https://github.com/laravel/tinker/issues",
-                "source": "https://github.com/laravel/tinker/tree/v2.11.0"
+                "source": "https://github.com/laravel/tinker/tree/v2.11.1"
             },
-            "time": "2025-12-19T19:16:45+00:00"
+            "time": "2026-02-06T14:12:35+00:00"
         },
         {
             "name": "league/commonmark",
@@ -1834,6 +1834,61 @@
                 }
             ],
             "time": "2024-09-21T08:32:55+00:00"
+        },
+        {
+            "name": "money-transfer/inline-edit",
+            "version": "dev-develop",
+            "dist": {
+                "type": "path",
+                "url": "packages/inline-edit",
+                "reference": "21268c4719f3d82946e7c19da1f207f040a2b595"
+            },
+            "require": {
+                "illuminate/http": "^8.0|^9.0|^10.0|^11.0",
+                "illuminate/support": "^8.0|^9.0|^10.0|^11.0",
+                "php": "^7.3|^8.0|^8.1|^8.2"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^7.0|^8.0|^9.0",
+                "phpunit/phpunit": "^9.0|^10.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "MoneyTransfer\\InlineEdit\\InlineEditServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "MoneyTransfer\\InlineEdit\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "MoneyTransfer\\InlineEdit\\Tests\\": "tests/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Money Transfer App",
+                    "email": "dev@moneytransfer.com"
+                }
+            ],
+            "description": "Édition inline générique pour Laravel - Double-clic pour éditer, sauvegarde automatique via API",
+            "keywords": [
+                "ajax",
+                "editable",
+                "inline-edit",
+                "laravel"
+            ],
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "monolog/monolog",
@@ -2927,16 +2982,16 @@
         },
         {
             "name": "psy/psysh",
-            "version": "v0.12.18",
+            "version": "v0.12.20",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bobthecow/psysh.git",
-                "reference": "ddff0ac01beddc251786fe70367cd8bbdb258196"
+                "reference": "19678eb6b952a03b8a1d96ecee9edba518bb0373"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/ddff0ac01beddc251786fe70367cd8bbdb258196",
-                "reference": "ddff0ac01beddc251786fe70367cd8bbdb258196",
+                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/19678eb6b952a03b8a1d96ecee9edba518bb0373",
+                "reference": "19678eb6b952a03b8a1d96ecee9edba518bb0373",
                 "shasum": ""
             },
             "require": {
@@ -3000,9 +3055,9 @@
             ],
             "support": {
                 "issues": "https://github.com/bobthecow/psysh/issues",
-                "source": "https://github.com/bobthecow/psysh/tree/v0.12.18"
+                "source": "https://github.com/bobthecow/psysh/tree/v0.12.20"
             },
-            "time": "2025-12-17T14:35:46+00:00"
+            "time": "2026-02-11T15:05:28+00:00"
         },
         {
             "name": "ralouphie/getallheaders",
@@ -5465,46 +5520,39 @@
         },
         {
             "name": "thecodingmachine/safe",
-            "version": "v2.5.0",
+            "version": "v1.3.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thecodingmachine/safe.git",
-                "reference": "3115ecd6b4391662b4931daac4eba6b07a2ac1f0"
+                "reference": "a8ab0876305a4cdaef31b2350fcb9811b5608dbc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thecodingmachine/safe/zipball/3115ecd6b4391662b4931daac4eba6b07a2ac1f0",
-                "reference": "3115ecd6b4391662b4931daac4eba6b07a2ac1f0",
+                "url": "https://api.github.com/repos/thecodingmachine/safe/zipball/a8ab0876305a4cdaef31b2350fcb9811b5608dbc",
+                "reference": "a8ab0876305a4cdaef31b2350fcb9811b5608dbc",
                 "shasum": ""
             },
             "require": {
-                "php": "^8.0"
+                "php": ">=7.2"
             },
             "require-dev": {
-                "phpstan/phpstan": "^1.5",
-                "phpunit/phpunit": "^9.5",
+                "phpstan/phpstan": "^0.12",
                 "squizlabs/php_codesniffer": "^3.2",
-                "thecodingmachine/phpstan-strict-rules": "^1.0"
+                "thecodingmachine/phpstan-strict-rules": "^0.12"
             },
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "2.2.x-dev"
+                    "dev-master": "0.1-dev"
                 }
             },
             "autoload": {
                 "files": [
                     "deprecated/apc.php",
-                    "deprecated/array.php",
-                    "deprecated/datetime.php",
                     "deprecated/libevent.php",
-                    "deprecated/misc.php",
-                    "deprecated/password.php",
                     "deprecated/mssql.php",
                     "deprecated/stats.php",
-                    "deprecated/strings.php",
                     "lib/special_cases.php",
-                    "deprecated/mysqli.php",
                     "generated/apache.php",
                     "generated/apcu.php",
                     "generated/array.php",
@@ -5525,7 +5573,6 @@
                     "generated/fpm.php",
                     "generated/ftp.php",
                     "generated/funchand.php",
-                    "generated/gettext.php",
                     "generated/gmp.php",
                     "generated/gnupg.php",
                     "generated/hash.php",
@@ -5535,6 +5582,7 @@
                     "generated/image.php",
                     "generated/imap.php",
                     "generated/info.php",
+                    "generated/ingres-ii.php",
                     "generated/inotify.php",
                     "generated/json.php",
                     "generated/ldap.php",
@@ -5543,14 +5591,20 @@
                     "generated/mailparse.php",
                     "generated/mbstring.php",
                     "generated/misc.php",
+                    "generated/msql.php",
                     "generated/mysql.php",
+                    "generated/mysqli.php",
+                    "generated/mysqlndMs.php",
+                    "generated/mysqlndQc.php",
                     "generated/network.php",
                     "generated/oci8.php",
                     "generated/opcache.php",
                     "generated/openssl.php",
                     "generated/outcontrol.php",
+                    "generated/password.php",
                     "generated/pcntl.php",
                     "generated/pcre.php",
+                    "generated/pdf.php",
                     "generated/pgsql.php",
                     "generated/posix.php",
                     "generated/ps.php",
@@ -5561,6 +5615,7 @@
                     "generated/sem.php",
                     "generated/session.php",
                     "generated/shmop.php",
+                    "generated/simplexml.php",
                     "generated/sockets.php",
                     "generated/sodium.php",
                     "generated/solr.php",
@@ -5583,13 +5638,13 @@
                     "generated/zip.php",
                     "generated/zlib.php"
                 ],
-                "classmap": [
-                    "lib/DateTime.php",
-                    "lib/DateTimeImmutable.php",
-                    "lib/Exceptions/",
-                    "deprecated/Exceptions/",
-                    "generated/Exceptions/"
-                ]
+                "psr-4": {
+                    "Safe\\": [
+                        "lib/",
+                        "deprecated/",
+                        "generated/"
+                    ]
+                }
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
@@ -5598,9 +5653,9 @@
             "description": "PHP core functions that throw exceptions instead of returning FALSE on error",
             "support": {
                 "issues": "https://github.com/thecodingmachine/safe/issues",
-                "source": "https://github.com/thecodingmachine/safe/tree/v2.5.0"
+                "source": "https://github.com/thecodingmachine/safe/tree/v1.3.3"
             },
-            "time": "2023-04-05T11:54:14+00:00"
+            "time": "2020-10-28T17:51:34+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",
@@ -8235,12 +8290,14 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {},
+    "stability-flags": {
+        "money-transfer/inline-edit": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^7.3|^8.0"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.6.0"
 }

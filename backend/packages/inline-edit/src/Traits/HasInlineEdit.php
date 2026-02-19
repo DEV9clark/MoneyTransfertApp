@@ -7,20 +7,6 @@ use Illuminate\Support\Facades\Validator;
 trait HasInlineEdit
 {
     /**
-     * Champs autorisés pour l'édition inline
-     * 
-     * @var array
-     */
-    protected $inlineEditableFields = [];
-
-    /**
-     * Règles de validation personnalisées pour l'édition inline
-     * 
-     * @var array
-     */
-    protected $inlineEditValidationRules = [];
-
-    /**
      * Vérifier si un champ est éditable inline
      * 
      * @param string $field

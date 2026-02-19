@@ -10,6 +10,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS (CDN for Prototype) -->
+
+    <!-- Inline Edit CSS -->
+    <link href="{{ asset('css/inline-edit.css') }}" rel="stylesheet">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -358,5 +362,14 @@
             </div>
         </div>
     </div>
+
+    <!-- Inline Edit JS -->
+    <script src="{{ asset('js/inline-edit.js') }}"></script>
+    <script>
+        initInlineEdit({
+            selector: '.editable-field',
+            apiEndpoint: '/api/transactions'
+        });
+    </script>
 </body>
 </html>
