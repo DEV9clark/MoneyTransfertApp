@@ -70,11 +70,9 @@
 
                 <div class="mb-6">
                     <label class="block text-gray-700 text-sm font-bold mb-2">Destination Country</label>
-                    <select id="destination" name="destination" class="block appearance-none w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-primary">
-                        <option value="Senegal">Senegal</option>
-                        <option value="Ivory Coast">Ivory Coast</option>
-                        <option value="Mali">Mali</option>
-                        <option value="To Be Defined">Other</option>
+                    <select id="destination" name="destination" class="block appearance-none w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-primary" onchange="onCountryChange()">
+                        <option value="">-- Select Country --</option>
+                        <!-- Chargé dynamiquement depuis GraphQL -->
                     </select>
                 </div>
 
@@ -85,7 +83,7 @@
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Recipient Phone</label>
-                        <input class="appearance-none block w-full bg-gray-50 text-gray-700 border border-gray-300 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-primary" id="recipient_phone" name="recipient_phone" type="text" placeholder="+221 ...">
+                        <input class="appearance-none block w-full bg-gray-50 text-gray-700 border border-gray-300 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-primary" id="recipient_phone" name="recipient_phone" type="text" placeholder="Indicatif pays + numéro (ex: 771234567)">
                     </div>
                 </div>
             </div>
@@ -181,6 +179,56 @@
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     let searchTimeout;
+    let countriesData = [];
+
+    // Charger les pays depuis GraphQL
+    async function loadCountries() {
+        try {
+            const res = await fetch('{{ url("/graphql") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    query: '{ countries { id name code phone_code currency } }'
+                })
+            });
+            const result = await res.json();
+            if (result.data && result.data.countries) {
+                countriesData = result.data.countries;
+                const select = document.getElementById('destination');
+                select.innerHTML = '<option value="">-- Select Country --</option>';
+                countriesData.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.name;
+                    opt.textContent = c.name;
+                    opt.dataset.phoneCode = c.phone_code;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error('Failed to load countries', e);
+        }
+    }
+
+    // Quand on change le pays destination → préfixer le téléphone avec l'indicatif sans +
+    function onCountryChange() {
+        const select = document.getElementById('destination');
+        const selectedOpt = select.options[select.selectedIndex];
+        if (!selectedOpt || !selectedOpt.dataset.phoneCode) return;
+
+        const phoneInput = document.getElementById('recipient_phone');
+        const code = selectedOpt.dataset.phoneCode.replace('+', ''); // +221 → 221
+
+        // Ne préfixer que si le champ est vide ou ne commence pas déjà par l'indicatif
+        const currentVal = phoneInput.value.replace(/[^0-9]/g, '');
+        if (!currentVal || !currentVal.startsWith(code)) {
+            phoneInput.value = code;
+            phoneInput.focus();
+        }
+    }
 
     // Toast Function
     function showToast(message, type = 'success') {
@@ -444,5 +492,8 @@
             btn.innerText = originalText;
         }
     });
+
+    // Charger les pays au chargement de la page
+    loadCountries();
 </script>
 @endpush

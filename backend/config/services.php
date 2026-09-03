@@ -30,4 +30,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'dexchange' => [
+        'api_key' => env('DEXCHANGE_API_KEY'),
+        'signature' => env('DEXCHANGE_SIGNATURE', 'DEXCHANGE'),
+        'endpoint' => env('DEXCHANGE_ENDPOINT', 'https://api.dexchange-sms.com/api/v1/send/sms'),
+    ],
+
 ];

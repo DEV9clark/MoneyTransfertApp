@@ -8,16 +8,25 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Wallet;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Exception;
 
 class TransactionService
 {
+    protected SmsService $smsService;
+
+    public function __construct(SmsService $smsService)
+    {
+        $this->smsService = $smsService;
+    }
+
     public function initiateTransfer(User $sender, array $data)
     {
         $senderWallet = $sender->wallet;
 
-        if (!$senderWallet) {
+        if (!$senderWallet)
+        {
             throw new Exception("Sender wallet not found.");
         }
 
@@ -25,7 +34,8 @@ class TransactionService
         $fee = $data['fee_amount'];
         $total = $data['total_amount'];
 
-        if ($senderWallet->balance < $total) {
+        if ($senderWallet->balance < $total)
+        {
             throw new Exception("Insufficient funds. Total required: {$total}");
         }
 
@@ -35,13 +45,14 @@ class TransactionService
             ['name' => $data['client_name'], 'uuid' => Str::uuid()] // Add uuid if creating
         );
 
-        $code = strtoupper(Str::random(6)); // Mock SMS code
+        $code = strtoupper(Str::random(6)); // SMS verification code
 
-        return DB::transaction(function () use ($senderWallet, $client, $amount, $fee, $total, $code, $data) {
+        return DB::transaction(function () use ($senderWallet, $client, $amount, $fee, $total, $code, $data, $sender)
+        {
             // 1. Debit Sender Agent (Amount + Fee)
             $senderBalanceBefore = $senderWallet->balance;
             $senderWallet->decrement('balance', $total);
-            
+
             // 2. Create Transaction (Pending, linked to Client)
             $transaction = Transaction::create([
                 'uuid' => Str::uuid(),
@@ -69,6 +80,33 @@ class TransactionService
                 'type' => 'debit',
             ]);
 
+
+
+            // 4. Send SMS to client with withdrawal code
+            try
+            {
+                // Récupérer l'indicatif du pays du client depuis la relation
+                $client->load('country');
+                $countryPhoneCode = $client->country ? $client->country->phone_code : null;
+
+                $this->smsService->sendWithdrawalCode(
+                    $transaction->recipient_phone,
+                    $code,
+                    $amount,
+                    $senderWallet->currency,
+                    $countryPhoneCode
+                );
+            }
+            catch (\Throwable $e)
+            {
+                // Ne pas bloquer la transaction si le SMS échoue
+                Log::warning('[TransactionService] Échec envoi SMS au client', [
+                    'client_phone' => $client->phone,
+                    'transaction_id' => $transaction->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             return $transaction;
         });
     }
@@ -80,8 +118,9 @@ class TransactionService
             ->firstOrFail();
 
         // No receiver_wallet check here anymore, as ANY agent can payout.
-        
-        return DB::transaction(function () use ($transaction, $payoutAgent) {
+
+        return DB::transaction(function () use ($transaction, $payoutAgent)
+        {
             $payoutWallet = $payoutAgent->wallet;
             $amount = $transaction->amount;
 
@@ -103,6 +142,34 @@ class TransactionService
                 'status' => 'completed',
                 'payout_wallet_id' => $payoutWallet->id
             ]);
+
+            // 4. Send SMS confirmation to client
+            try
+            {
+                $client = $transaction->client;
+                if ($client && $client->phone)
+                {
+                    // Récupérer l'indicatif du pays du client
+                    $client->load('country');
+                    $countryPhoneCode = $client->country ? $client->country->phone_code : null;
+
+                    $this->smsService->sendPaymentConfirmation(
+                        $client->phone,
+                        $transaction->reference,
+                        $transaction->amount,
+                        $transaction->currency,
+                        $countryPhoneCode
+                    );
+                }
+            }
+            catch (\Throwable $e)
+            {
+                // Ne pas bloquer la transaction si le SMS échoue
+                Log::warning('[TransactionService] Échec envoi SMS confirmation', [
+                    'transaction_id' => $transaction->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return $transaction;
         });

@@ -62,7 +62,7 @@ type Transaction {
     type: String!
     reference: String
     created_at: DateTime!
-    sender_wallet: Wallet @belongsTo
-    payout_wallet: Wallet @belongsTo
+    sender_wallet: Wallet @belongsTo(relation: "senderWallet")
+    payout_wallet: Wallet @belongsTo(relation: "payoutWallet")
     client: Client @belongsTo
 }

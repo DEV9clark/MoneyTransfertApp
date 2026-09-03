@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const api = new DashboardApi('/money_transfer_app/');
+    const api = new DashboardApi('/');
     let transactionsData = [];
 
     // Currency Logic
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Get current currency from state or localstorage
             const currency = localStorage.getItem('selected_currency') || 'USD';
 
-            const res = await fetch(`/money_transfer_app/api/transactions/stats?filter=${filter}&currency=${currency}`, {
+            const res = await fetch(`/api/transactions/stats?filter=${filter}&currency=${currency}`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -81,14 +81,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await res.json();
 
             // Update Volume
-            document.getElementById('stat-volume').innerText = formatMoney(data.volume) + ' ' + currency;
+            document.getElementById('stat-volume').innerText = formatMoney(data.volume);
 
             // Update Profit (if exists)
             const profitEl = document.getElementById('stat-profit');
             if (profitEl) {
                 // If the data.fees is in the requested currency, just display it.
                 // Note: The API sums the fee_amount for transactions of this currency.
-                profitEl.innerText = formatMoney(data.fees) + ' ' + currency;
+                profitEl.innerText = formatMoney(data.fees);
             }
 
             // Highlight active button
