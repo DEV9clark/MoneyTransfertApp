@@ -14,14 +14,17 @@ class WebAuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (Auth::attempt($credentials + ['is_active' => true], $request->boolean('remember'))) {
             $request->session()->regenerate();
+            \App\Services\AuditLogger::log('auth.login', Auth::user(), ['channel' => 'web']);
 
             return response()->json(['message' => 'Login successful', 'redirect' => route('dashboard')]);
         }
 
+        \App\Services\AuditLogger::log('auth.failed', null, ['email' => $request->email, 'channel' => 'web']);
+
         return response()->json([
-            'message' => 'The provided credentials do not match our records.',
+            'message' => 'Identifiants incorrects ou compte désactivé.',
         ], 401);
     }
 

@@ -125,6 +125,7 @@
                 method: method,
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
                 body: JSON.stringify(data)
@@ -133,7 +134,8 @@
             if(res.ok) {
                 window.location.reload();
             } else {
-                alert('Error saving tariff');
+                const err = await res.json().catch(() => ({}));
+                alert(err.message || 'Erreur lors de l\'enregistrement du tarif');
             }
         } catch(e) { console.error(e); }
     }
@@ -143,7 +145,7 @@
         try {
             await fetch(`{{ url('/tariffs') }}/${id}`, {
                 method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
             });
             window.location.reload();
         } catch(e) { console.error(e); }

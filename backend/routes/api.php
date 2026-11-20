@@ -1,73 +1,103 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AgentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Client\AuthController as ClientAuthController;
+use App\Http\Controllers\Api\Client\TransferController as ClientTransferController;
+use App\Http\Controllers\Api\ClientController;
+use App\Http\Controllers\Api\PreorderController;
+use App\Http\Controllers\Api\CountryController;
+use App\Http\Controllers\Api\ReceiptController;
+use App\Http\Controllers\Api\TransactionController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| API (application mobile) — authentification par jeton Sanctum
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
+| Les anciennes routes publiques /debug-data, /fix-fees et /register ont été supprimées :
+| elles exposaient les codes de retrait et permettaient de créer des agents sans contrôle.
 */
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
-
-
-
-Route::get('/debug-data', function() {
-    $transactions = \App\Models\Transaction::latest()->take(5)->get();
-    $todayVolume = \App\Models\Transaction::whereDate('created_at', now())->sum('amount');
-    $todayFee = \App\Models\Transaction::whereDate('created_at', now())->sum('fee_amount');
-
-    return response()->json([
-        'server_time' => now()->toDateTimeString(),
-        'today_volume' => $todayVolume,
-        'today_fee' => $todayFee,
-        'last_5_transactions' => $transactions
-    ]);
-});
-
-Route::get('/fix-fees', function() {
-    $transactions = \App\Models\Transaction::where('fee_amount', 0)->get();
-    $service = new \App\Services\TariffService();
-    $updated = 0;
-
-    foreach ($transactions as $t) {
-        $fee = $service->calculateFee($t->amount, $t->type);
-        if ($fee > 0) {
-            $t->fee_amount = $fee;
-            $t->total_amount = $t->amount + $fee;
-            $t->save();
-            $updated++;
-        }
-    }
-
-    return response()->json(['message' => "Fixed $updated transactions"]);
-});
-
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', function (Request $request) {
-        return $request->user();
+    Route::get('/user', [AuthController::class, 'me']);
+    Route::get('/balance', [TransactionController::class, 'balance']);
+    Route::get('/countries', [CountryController::class, 'index']);
+
+    // Envoi
+    Route::post('/transfer', [TransactionController::class, 'transfer']);
+    Route::post('/transactions/calculate-fees', [TransactionController::class, 'calculateFees']);
+
+    // Retrait (limité contre les tentatives de devinette du code)
+    Route::middleware('throttle:withdrawal')->group(function () {
+        Route::post('/transactions/verify', [TransactionController::class, 'verifyCode']);
+        Route::post('/withdraw', [TransactionController::class, 'withdraw']);
     });
 
-    Route::post('/transfer', [App\Http\Controllers\Api\TransactionController::class, 'transfer']);
-    Route::post('/withdraw', [App\Http\Controllers\Api\TransactionController::class, 'withdraw']);
-    Route::get('/balance', [App\Http\Controllers\Api\TransactionController::class, 'balance']);
-    Route::get('/transactions', [App\Http\Controllers\Api\TransactionController::class, 'history']);
-    
-    // Additional Mobile/API Endpoints
-    Route::get('/clients/search', [App\Http\Controllers\Api\ClientController::class, 'search']);
-    Route::get('/transactions/stats', [App\Http\Controllers\Api\TransactionController::class, 'stats']);
-    Route::get('/transactions/pending-count', [App\Http\Controllers\Api\TransactionController::class, 'pendingCount']);
-    Route::post('/transactions/calculate-fees', [App\Http\Controllers\Api\TransactionController::class, 'calculateFees']);
-    Route::post('/transactions/verify', [App\Http\Controllers\Api\TransactionController::class, 'verifyCode']);
-    Route::apiResource('/clients', App\Http\Controllers\Api\ClientController::class);
+    // Consultation
+    Route::get('/transactions', [TransactionController::class, 'history']);
+    Route::get('/transactions/stats', [TransactionController::class, 'stats']);
+    Route::get('/transactions/pending-count', [TransactionController::class, 'pendingCount']);
+    Route::get('/transactions/{transaction:uuid}', [TransactionController::class, 'show']);
+    Route::post('/transactions/{transaction:uuid}/cancel', [TransactionController::class, 'cancel']);
+    Route::post('/transactions/{transaction:uuid}/resend-code', [TransactionController::class, 'resendCode'])
+        ->middleware('throttle:3,60');
+
+    // Reçus PDF : deposit (envoi, remis à l'expéditeur) / withdrawal (retrait, signé par le bénéficiaire)
+    Route::get('/transactions/{transaction:uuid}/receipt/{kind}', [ReceiptController::class, 'show'])
+        ->where('kind', 'deposit|withdrawal');
+
+    // Pré-envois créés par les clients dans l'application : encaissement au guichet
+    Route::post('/preorders/lookup', [PreorderController::class, 'lookup'])->middleware('throttle:30,1');
+    Route::post('/preorders/confirm', [PreorderController::class, 'confirm']);
+
+    // Clients
+    Route::get('/clients/search', [ClientController::class, 'search']);
+    Route::apiResource('/clients', ClientController::class);
+
+    // Administration
+    Route::middleware('admin')->prefix('admin')->group(function () {
+        Route::get('/agents', [AgentController::class, 'index']);
+        Route::post('/agents', [AgentController::class, 'store']);
+        Route::patch('/agents/{user}/status', [AgentController::class, 'updateStatus']);
+        Route::post('/agents/{user}/topup', [AgentController::class, 'topup']);
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Application CLIENT (mobile) — /api/client/...
+|--------------------------------------------------------------------------
+| Jetons distincts de ceux des agents : un jeton client est refusé sur les routes agents
+| (middleware "active") et inversement (middleware "client").
+*/
+Route::prefix('client')->group(function () {
+    Route::get('/countries', [ClientTransferController::class, 'countries']);
+
+    Route::middleware('throttle:client-auth')->group(function () {
+        Route::post('/check', [ClientAuthController::class, 'check']);
+        Route::post('/register', [ClientAuthController::class, 'register']);
+        Route::post('/login', [ClientAuthController::class, 'login']);
+        Route::post('/pin/reset', [ClientAuthController::class, 'resetPin']);
+    });
+    Route::post('/otp', [ClientAuthController::class, 'requestOtp'])->middleware('throttle:client-otp');
+
+    Route::middleware(['auth:sanctum', 'client'])->group(function () {
+        Route::get('/me', [ClientAuthController::class, 'me']);
+        Route::patch('/me', [ClientAuthController::class, 'updateProfile']);
+        Route::post('/pin', [ClientAuthController::class, 'changePin']);
+        Route::post('/logout', [ClientAuthController::class, 'logout']);
+
+        Route::post('/quote', [ClientTransferController::class, 'quote']);
+        Route::get('/beneficiaries', [ClientTransferController::class, 'beneficiaries']);
+        Route::get('/transfers', [ClientTransferController::class, 'index']);
+        Route::post('/transfers', [ClientTransferController::class, 'store'])->middleware('throttle:10,1');
+        Route::get('/transfers/{transaction:uuid}', [ClientTransferController::class, 'show']);
+        Route::post('/transfers/{transaction:uuid}/cancel', [ClientTransferController::class, 'cancel']);
+        Route::get('/transfers/{transaction:uuid}/receipt/{kind}', [ClientTransferController::class, 'receipt'])
+            ->where('kind', 'deposit|withdrawal');
+    });
 });

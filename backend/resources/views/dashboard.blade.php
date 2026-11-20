@@ -79,11 +79,12 @@
                         <th class="px-6 py-3 text-right">Montant</th>
                         <th class="px-6 py-3">Statut</th>
                         <th class="px-6 py-3">Date</th>
+                        <th class="px-6 py-3">Reçus</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100" id="transactions-table-body">
                     <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-400">Chargement...</td>
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-400">Chargement...</td>
                     </tr>
                 </tbody>
             </table>

@@ -15,6 +15,7 @@
                     <select id="transaction_type" name="type" onchange="toggleTransactionMode()" class="block appearance-none w-full bg-indigo-50 border border-indigo-200 text-indigo-900 py-4 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-primary font-bold text-lg">
                         <option value="send">Send Money (Envoi)</option>
                         <option value="withdraw">Withdraw Money (Retrait)</option>
+                        <option value="preorder">Pré-envoi client (paiement en agence)</option>
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-indigo-600">
                         <svg class="fill-current h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
@@ -47,6 +48,23 @@
                         </div>
                     </div>
                     <button type="button" onclick="clearClient()" class="text-sm font-medium text-green-600 hover:text-green-800 underline">Change</button>
+                </div>
+
+                <!-- Pièce d'identité de l'expéditeur (figure sur le reçu) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Pièce d'identité expéditeur @if(config('transfer.require_sender_id'))<span class="text-red-500">*</span>@endif</label>
+                        <select id="sender_id_type" class="block w-full bg-gray-50 border border-gray-300 text-gray-700 py-3 px-4 rounded leading-tight focus:outline-none focus:bg-white focus:border-primary">
+                            <option value="">-- Type de pièce --</option>
+                            @foreach (config('transfer.id_types') as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Numéro de la pièce</label>
+                        <input id="sender_id_number" type="text" maxlength="50" class="appearance-none block w-full bg-gray-50 text-gray-700 border border-gray-300 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-primary" placeholder="N° de la pièce">
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -108,8 +126,44 @@
                 <div class="mb-8">
                     <label class="block text-gray-700 text-lg font-bold mb-4 text-center">Enter Transaction Code</label>
                     <div class="flex justify-center">
-                        <input type="text" id="withdraw_code" name="code" class="block w-64 text-center text-3xl font-mono tracking-widest border-2 border-gray-300 rounded-xl py-4 focus:outline-none focus:border-primary focus:ring-4 focus:ring-indigo-100 uppercase" placeholder="ABC-123" maxlength="10">
+                        <input type="text" id="withdraw_code" name="code" class="block w-64 text-center text-3xl font-mono tracking-widest border-2 border-gray-300 rounded-xl py-4 focus:outline-none focus:border-primary focus:ring-4 focus:ring-indigo-100 uppercase" placeholder="12345678" maxlength="12" inputmode="numeric" autocomplete="off">
                     </div>
+                </div>
+            </div>
+
+            <!-- ================= PRÉ-ENVOI CLIENT ================= -->
+            <div id="preorder_mode_section" class="hidden">
+                <div class="bg-indigo-50 border-l-4 border-indigo-400 p-4 mb-8">
+                    <p class="text-sm text-indigo-800">
+                        Le client a préparé son envoi dans l'application. Saisissez le <strong>code de paiement</strong> affiché sur son téléphone,
+                        vérifiez les informations, encaissez le <strong>total</strong> en espèces puis validez.
+                    </p>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-lg font-bold mb-4 text-center">Code de paiement</label>
+                    <div class="flex justify-center">
+                        <input type="text" id="preorder_code" class="block w-64 text-center text-3xl font-mono tracking-widest border-2 border-gray-300 rounded-xl py-4 focus:outline-none focus:border-primary uppercase" placeholder="ABC123" maxlength="12" autocomplete="off" oninput="resetPreorder()">
+                    </div>
+                </div>
+
+                <div id="preorder_details" class="hidden space-y-3 bg-gray-50 rounded-xl p-6 mb-6">
+                    <div class="flex justify-between border-b pb-2"><span class="text-gray-500">Client</span><span class="font-bold text-right" id="po_client"></span></div>
+                    <div class="flex justify-between border-b pb-2"><span class="text-gray-500">Bénéficiaire</span><span class="font-bold text-right" id="po_recipient"></span></div>
+                    <div class="flex justify-between border-b pb-2"><span class="text-gray-500">Destination</span><span class="font-bold" id="po_destination"></span></div>
+                    <div class="flex justify-between border-b pb-2"><span class="text-gray-500">Montant envoyé</span><span class="font-bold" id="po_amount"></span></div>
+                    <div class="flex justify-between border-b pb-2"><span class="text-gray-500">Frais</span><span class="font-bold" id="po_fee"></span></div>
+                    <div class="flex justify-between text-lg"><span class="text-gray-700 font-bold">À encaisser</span><span class="font-bold text-indigo-700" id="po_total"></span></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                        <select id="po_id_type" class="block w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded">
+                            <option value="">-- Pièce d'identité du client --</option>
+                            @foreach (config('transfer.id_types') as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <input id="po_id_number" type="text" maxlength="50" placeholder="Numéro de la pièce" class="block w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 rounded">
+                    </div>
+                    <p class="text-xs text-gray-500">Expire le <span id="po_expires"></span></p>
                 </div>
             </div>
 
@@ -149,9 +203,22 @@
                     <div class="text-sm text-gray-500" id="verify_recipient_phone"></div>
                 </div>
             </div>
-            <div class="flex justify-between pb-2">
+            <div class="flex justify-between border-b pb-2">
                 <span class="text-gray-500">Date</span>
                 <span class="font-bold text-gray-800" id="verify_date"></span>
+            </div>
+            <div class="pt-2">
+                <p class="text-sm font-bold text-gray-700 mb-2">Pièce d'identité présentée par le bénéficiaire <span class="text-red-500">*</span></p>
+                <div class="grid grid-cols-2 gap-3">
+                    <select id="recipient_id_type" class="block w-full bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded">
+                        <option value="">-- Type --</option>
+                        @foreach (config('transfer.id_types') as $key => $label)
+                            <option value="{{ $key }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <input id="recipient_id_number" type="text" maxlength="50" placeholder="Numéro" class="block w-full bg-gray-50 border border-gray-300 text-gray-700 py-2 px-3 rounded">
+                </div>
+                <p class="text-xs text-gray-500 mt-2">Vérifiez que le nom sur la pièce correspond au bénéficiaire.</p>
             </div>
         </div>
         <div class="p-6 bg-gray-50 flex space-x-4">
@@ -161,6 +228,25 @@
             <button onclick="confirmWithdrawal()" class="w-1/2 bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition shadow-lg">
                 Confirm & Pay
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- Success / Receipt Modal -->
+<div id="receiptModal" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black bg-opacity-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+        <div class="bg-green-600 p-6 text-white text-center">
+            <h3 class="text-2xl font-bold" id="receipt_title">Opération réussie</h3>
+            <p class="text-green-100 mt-1" id="receipt_subtitle"></p>
+        </div>
+        <div class="p-6 space-y-3 text-center">
+            <p class="text-gray-500 text-sm">Référence du transfert</p>
+            <p class="font-mono text-2xl font-bold text-gray-900" id="receipt_reference"></p>
+            <p class="text-sm text-gray-600" id="receipt_hint"></p>
+        </div>
+        <div class="p-6 bg-gray-50 flex space-x-4">
+            <button onclick="closeReceiptModal()" class="w-1/2 bg-gray-200 text-gray-800 font-bold py-3 rounded-xl hover:bg-gray-300 transition">Fermer</button>
+            <a id="receipt_link" href="#" target="_blank" rel="noopener" class="w-1/2 text-center bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-lg">Imprimer le reçu</a>
         </div>
     </div>
 </div>
@@ -181,28 +267,44 @@
     let searchTimeout;
     let countriesData = [];
 
-    // Charger les pays depuis GraphQL
+    const jsonHeaders = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken };
+    const receiptBaseUrl = "{{ url('/transactions') }}";
+
+    // Message d'erreur lisible (validation Laravel ou erreur métier)
+    function errorMessage(result) {
+        if (result && result.errors) {
+            const first = Object.values(result.errors)[0];
+            if (Array.isArray(first) && first.length) return first[0];
+        }
+        return (result && result.message) || 'Erreur inattendue.';
+    }
+
+    function showReceiptModal(title, subtitle, reference, url, hint) {
+        document.getElementById('receipt_title').innerText = title;
+        document.getElementById('receipt_subtitle').innerText = subtitle;
+        document.getElementById('receipt_reference').innerText = reference;
+        document.getElementById('receipt_hint').innerText = hint || '';
+        document.getElementById('receipt_link').href = url;
+        document.getElementById('receiptModal').classList.remove('hidden');
+    }
+
+    function closeReceiptModal() {
+        document.getElementById('receiptModal').classList.add('hidden');
+        window.location.reload();
+    }
+
+    // Charger les pays
     async function loadCountries() {
         try {
-            const res = await fetch('{{ url("/graphql") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({
-                    query: '{ countries { id name code phone_code currency } }'
-                })
-            });
+            const res = await fetch("{{ url('/bo-api/countries') }}", { headers: { 'Accept': 'application/json' } });
             const result = await res.json();
-            if (result.data && result.data.countries) {
-                countriesData = result.data.countries;
+            if (Array.isArray(result)) {
+                countriesData = result;
                 const select = document.getElementById('destination');
                 select.innerHTML = '<option value="">-- Select Country --</option>';
                 countriesData.forEach(c => {
                     const opt = document.createElement('option');
-                    opt.value = c.name;
+                    opt.value = c.id;
                     opt.textContent = c.name;
                     opt.dataset.phoneCode = c.phone_code;
                     select.appendChild(opt);
@@ -260,7 +362,14 @@
         const type = document.getElementById('transaction_type').value;
         const btn = document.getElementById('submit_btn');
 
-        if (type === 'send') {
+        document.getElementById('preorder_mode_section').classList.toggle('hidden', type !== 'preorder');
+        if (type === 'preorder') {
+            document.getElementById('send_mode_section').classList.add('hidden');
+            document.getElementById('withdraw_mode_section').classList.add('hidden');
+            resetPreorder();
+            btn.classList.add('bg-primary');
+            btn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+        } else if (type === 'send') {
             document.getElementById('send_mode_section').classList.remove('hidden');
             document.getElementById('withdraw_mode_section').classList.add('hidden');
             btn.innerText = 'Process Transfer';
@@ -276,6 +385,66 @@
         }
     }
 
+    // ----- Pré-envoi client -----
+    let loadedPreorder = null;
+    const fmt = (v, c) => new Intl.NumberFormat('fr-FR').format(v) + ' ' + c;
+
+    function resetPreorder() {
+        loadedPreorder = null;
+        document.getElementById('preorder_details').classList.add('hidden');
+        if (document.getElementById('transaction_type').value === 'preorder') {
+            document.getElementById('submit_btn').innerText = 'Rechercher le pré-envoi';
+        }
+    }
+
+    async function handlePreorder(btn) {
+        const code = document.getElementById('preorder_code').value.trim().toUpperCase();
+        if (!code) throw new Error('Saisissez le code de paiement.');
+
+        if (!loadedPreorder || loadedPreorder.payment_code !== code) {
+            const res = await fetch("{{ url('/bo-api/preorders/lookup') }}", {
+                method: 'POST', headers: jsonHeaders, body: JSON.stringify({ payment_code: code })
+            });
+            const result = await res.json();
+            if (!res.ok) throw new Error(errorMessage(result));
+            const p = result.data;
+            loadedPreorder = p;
+            document.getElementById('po_client').innerText = `${p.client_name} (${p.client_phone})`;
+            document.getElementById('po_recipient').innerText = `${p.recipient_name} (${p.recipient_phone})`;
+            document.getElementById('po_destination').innerText = p.destination;
+            document.getElementById('po_amount').innerText = fmt(p.amount, p.currency);
+            document.getElementById('po_fee').innerText = fmt(p.fee, p.currency);
+            document.getElementById('po_total').innerText = fmt(p.total, p.currency);
+            document.getElementById('po_expires').innerText = p.expires_at;
+            document.getElementById('preorder_details').classList.remove('hidden');
+            btn.dataset.label = `Encaisser ${fmt(p.total, p.currency)} et valider`;
+            return;
+        }
+
+        const sender_id_type = document.getElementById('po_id_type').value || null;
+        const sender_id_number = document.getElementById('po_id_number').value.trim() || null;
+        if (!confirm(`Confirmez-vous avoir encaissé ${fmt(loadedPreorder.total, loadedPreorder.currency)} ?`)) {
+            throw new Error('Validation annulée.');
+        }
+
+        const res = await fetch("{{ url('/bo-api/preorders/confirm') }}", {
+            method: 'POST', headers: jsonHeaders,
+            body: JSON.stringify({ payment_code: code, sender_id_type, sender_id_number })
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(errorMessage(result));
+
+        const t = result.data;
+        loadedPreorder = null;
+        showReceiptModal(
+            'Pré-envoi encaissé',
+            'Total encaissé : ' + fmt(t.total_amount, t.currency),
+            t.reference,
+            `${receiptBaseUrl}/${t.uuid}/receipt/deposit`,
+            "Le code de retrait a été envoyé par SMS au bénéficiaire. Remettez le reçu signé au client."
+        );
+    }
+
     // Modal Logic
     const modal = document.getElementById('verifyModal');
     const modalContent = document.getElementById('verifyModalContent');
@@ -287,6 +456,8 @@
         document.getElementById('verify_recipient').innerText = data.recipient_name || 'N/A';
         document.getElementById('verify_recipient_phone').innerText = data.recipient_phone || 'N/A';
         document.getElementById('verify_date').innerText = data.created_at;
+        document.getElementById('recipient_id_type').value = '';
+        document.getElementById('recipient_id_number').value = '';
         
         modal.classList.remove('hidden');
         // Small delay for animation
@@ -306,23 +477,33 @@
 
     async function confirmWithdrawal() {
         const code = document.getElementById('withdraw_code').value;
-        closeModal();
-        
+        const recipient_id_type = document.getElementById('recipient_id_type').value;
+        const recipient_id_number = document.getElementById('recipient_id_number').value.trim();
+
+        if (!recipient_id_type || !recipient_id_number) {
+            showToast("Renseignez la pièce d'identité du bénéficiaire.", 'error');
+            return;
+        }
+
         try {
-             const res = await fetch("{{ url('/api/transactions/withdraw') }}", {
+            const res = await fetch("{{ url('/bo-api/transactions/withdraw') }}", {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                body: JSON.stringify({ code })
+                headers: jsonHeaders,
+                body: JSON.stringify({ code, recipient_id_type, recipient_id_number })
             });
 
             const result = await res.json();
-            if (!res.ok) throw new Error(result.message);
+            if (!res.ok) throw new Error(errorMessage(result));
 
-            showToast('Withdrawal Confirmed! Redirecting...', 'success');
-            setTimeout(() => {
-                window.location.href = '/dashboard';
-            }, 1500);
-
+            closeModal();
+            const t = result.data;
+            showReceiptModal(
+                'Paiement effectué',
+                new Intl.NumberFormat('fr-FR').format(t.amount) + ' ' + t.currency + ' remis à ' + t.recipient_name,
+                t.reference,
+                `${receiptBaseUrl}/${t.uuid}/receipt/withdrawal`,
+                'Imprimez le reçu de retrait et faites-le signer par le bénéficiaire.'
+            );
         } catch (error) {
             showToast(error.message, 'error');
         }
@@ -340,7 +521,7 @@
 
         searchTimeout = setTimeout(async () => {
             try {
-                const res = await fetch(`{{ url('/api/clients/search') }}?query=${query}`);
+                const res = await fetch(`{{ url('/bo-api/clients/search') }}?query=${encodeURIComponent(query)}`, { headers: { 'Accept': 'application/json' } });
                 const clients = await res.json();
                 
                 const resultsDiv = document.getElementById('client_results');
@@ -397,16 +578,18 @@
         }
 
         try {
-            const res = await fetch("{{ url('/api/transactions/calculate-fees') }}", {
+            const res = await fetch("{{ url('/bo-api/transactions/calculate-fees') }}", {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
+                headers: jsonHeaders,
                 body: JSON.stringify({ amount, type })
             });
-            
+
             const data = await res.json();
+            if (!res.ok) {
+                document.getElementById('total_amount').value = '—';
+                document.getElementById('fee_display').innerText = errorMessage(data);
+                return;
+            }
             document.getElementById('total_amount').value = new Intl.NumberFormat('fr-FR').format(data.total);
             document.getElementById('fee_display').innerText = `Fee: ${new Intl.NumberFormat('fr-FR').format(data.fee)}`;
         } catch (e) {
@@ -425,6 +608,13 @@
         btn.innerText = 'Processing...';
 
         try {
+            if (type === 'preorder') {
+                await handlePreorder(btn);
+                btn.disabled = false;
+                btn.innerText = btn.dataset.label || originalText;
+                delete btn.dataset.label;
+                return;
+            }
             if (type === 'send') {
                  // Send Logic (Same as before but with Toast)
                 if (!document.getElementById('client_name').value) {
@@ -445,23 +635,37 @@
                     type: 'send',
                     client_name: document.getElementById('client_name').value,
                     client_phone: document.getElementById('client_phone').value,
+                    sender_id_type: document.getElementById('sender_id_type').value || null,
+                    sender_id_number: document.getElementById('sender_id_number').value.trim() || null,
                     amount: document.getElementById('amount').value,
-                    destination: document.getElementById('destination').value,
+                    destination_country_id: document.getElementById('destination').value,
                     recipient_name: document.getElementById('recipient_name').value,
                     recipient_phone: document.getElementById('recipient_phone').value,
                 };
 
-                const res = await fetch("{{ url('/api/transactions') }}", {
+                if (!confirm(`Confirmer l'envoi de ${formData.amount} à ${formData.recipient_name} ?\nTotal à encaisser : ${document.getElementById('total_amount').value}`)) {
+                    throw new Error('Envoi annulé.');
+                }
+
+                const res = await fetch("{{ url('/bo-api/transactions') }}", {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: jsonHeaders,
                     body: JSON.stringify(formData)
                 });
-                
+
                 const result = await res.json();
-                if (!res.ok) throw new Error(result.message);
-                
-                showToast('Transfer Successful! Ref: ' + result.code, 'success');
-                setTimeout(() => window.location.reload(), 2000);
+                if (!res.ok) throw new Error(errorMessage(result));
+
+                const t = result.data;
+                showReceiptModal(
+                    'Transfert enregistré',
+                    'Total encaissé : ' + new Intl.NumberFormat('fr-FR').format(t.total_amount) + ' ' + t.currency,
+                    t.reference,
+                    `${receiptBaseUrl}/${t.uuid}/receipt/deposit`,
+                    'Le code de retrait a été envoyé par SMS au bénéficiaire. Remettez le reçu signé à l\'expéditeur.'
+                );
+                btn.disabled = false;
+                btn.innerText = originalText;
 
             } else {
                 // Withdraw CHECK Logic
@@ -469,14 +673,14 @@
                 if (!code) throw new Error("Please enter the transaction code.");
 
                 // Call Verify Endpoint
-                const res = await fetch("{{ url('/api/transactions/verify') }}", {
+                const res = await fetch("{{ url('/bo-api/transactions/verify') }}", {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    headers: jsonHeaders,
                     body: JSON.stringify({ code })
                 });
 
                 const result = await res.json();
-                if (!res.ok) throw new Error(result.message);
+                if (!res.ok) throw new Error(errorMessage(result));
 
                 // Show Modal on Success
                 openModal(result.data);

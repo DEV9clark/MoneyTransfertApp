@@ -25,8 +25,10 @@ class ClientController extends Controller
             return response()->json([]);
         }
 
-        $clients = Client::where('name', 'like', "%{$query}%")
-            ->orWhere('phone', 'like', "%{$query}%")
+        $like = '%' . addcslashes($query, '%_\\') . '%';
+        $clients = Client::where(function ($q) use ($like) {
+                $q->where('name', 'like', $like)->orWhere('phone', 'like', $like);
+            })
             ->with('country')
             ->withCount('transactions')
             ->limit(10)
@@ -45,9 +47,12 @@ class ClientController extends Controller
         return response()->json($client, 201);
     }
 
-    public function show(Client $client)
+    public function show(Request $request, Client $client)
     {
-        return response()->json($client->load('country', 'transactions'));
+        $client->load('country');
+        $client->setRelation('transactions', $client->transactions()->visibleTo($request->user())->limit(50)->get());
+
+        return response()->json($client);
     }
 
     public function update(UpdateClientRequest $request, Client $client)
@@ -57,9 +62,17 @@ class ClientController extends Controller
         return response()->json($client);
     }
 
-    public function destroy(Client $client)
+    public function destroy(Request $request, Client $client)
     {
+        if (!$request->user()->isAdmin()) {
+            return response()->json(['message' => 'Action réservée aux administrateurs.'], 403);
+        }
+        if ($client->transactions()->exists()) {
+            return response()->json(['message' => 'Ce client a des transactions : suppression impossible (traçabilité).'], 409);
+        }
+
         $client->delete();
+        \App\Services\AuditLogger::log('client.deleted', $client);
 
         return response()->json(null, 204);
     }

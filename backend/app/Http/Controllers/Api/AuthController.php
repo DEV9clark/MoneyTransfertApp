@@ -4,76 +4,57 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Wallet;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|string|email|max:255|unique:users',
-            'password'    => 'required|string|min:8',
-            'phone_number'=> 'nullable|string|max:20',
-            'country'     => 'nullable|string|max:100',
-        ]);
-
-        if ($validator->fails()) 
-        {
-            return response()->json($validator->errors(), 422);
-        }
-
-        $user = User::create([
-            'name'        => $request->name,
-            'email'       => $request->email,
-            'password'    => Hash::make($request->password),
-            'phone_number'=> $request->phone_number,
-            'country'     => $request->country,
-        ]);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        // Create default wallet
-        Wallet::create([
-            'uuid'        => Str::uuid(),
-            'user_id'     => $user->id,
-            'currency'    => 'XOF', // Default for now
-            'balance'     => 0,
-        ]);
-
-        return response()->json([
-            'access_token'=> $token,
-            'token_type'  => 'Bearer',
-            'user'        => $user
-        ]);
-    }
-
+    /**
+     * Connexion de l'application mobile (jeton Sanctum). Limité par le rate limiter "login".
+     * La création de comptes agents se fait désormais par un admin : POST /api/admin/agents.
+     */
     public function login(Request $request)
     {
-        if (!Auth::attempt($request->only('email', 'password'))) 
-        {
-            return response()->json([
-                'message' => 'Invalid login details'
-            ], 401);
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+            'device_name' => 'nullable|string|max:100',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            AuditLogger::log('auth.failed', null, ['email' => $request->email]);
+            return response()->json(['message' => 'Email ou mot de passe incorrect.'], 401);
         }
 
-        $user = User::where('email', $request->email)->firstOrFail();
-        $token = $user->createToken('auth_token')->plainTextToken;
+        if (!$user->is_active) {
+            return response()->json(['message' => 'Compte désactivé. Contactez votre administrateur.'], 403);
+        }
+
+        $token = $user->createToken($request->input('device_name', 'mobile'))->plainTextToken;
+        AuditLogger::log('auth.login', $user, ['channel' => 'api'], $user->id);
 
         return response()->json([
-            'access_token'=> $token,
-            'token_type'  => 'Bearer',
-            'user'        => $user
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user->load('wallet'),
         ]);
     }
 
-    public function logout(Request $request) {
-        $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out successfully']);
+    public function me(Request $request)
+    {
+        return response()->json($request->user()->load('wallet'));
+    }
+
+    public function logout(Request $request)
+    {
+        $token = $request->user()->currentAccessToken();
+        if ($token && method_exists($token, 'delete')) {
+            $token->delete();
+        }
+
+        return response()->json(['message' => 'Déconnecté.']);
     }
 }

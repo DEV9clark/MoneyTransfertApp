@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,11 +11,6 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -24,29 +18,39 @@ class User extends Authenticatable
         'phone_number',
         'country',
         'role',
+        'is_active',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
+    /** Portefeuille de float de l'agent (hors comptes de commissions). */
     public function wallet()
     {
-        return $this->hasOne(Wallet::class);
+        return $this->hasOne(Wallet::class)->where('type', Wallet::TYPE_AGENT);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /** Un agent ne voit que lui-même ; un admin voit tout le monde. */
+    public function scopeVisibleTo($query, $user = null)
+    {
+        // Lighthouse (GraphQL) passe ses arguments en tableau : on retombe alors sur l'utilisateur connecté.
+        $user = $user instanceof User ? $user : auth()->user();
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $user->isAdmin() ? $query : $query->where('id', $user->id);
     }
 }

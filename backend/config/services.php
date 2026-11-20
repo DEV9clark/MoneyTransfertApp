@@ -30,6 +30,23 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Ordre d'essai des prestataires SMS (le suivant sert de secours si le précédent échoue).
+    'sms' => [
+        'drivers' => env('SMS_DRIVERS', 'dexnotify,dexchange'),
+    ],
+
+    'dexnotify' => [
+        'url' => env('DEXNOTIFY_URL', 'https://api.dexnotify.com/api'),
+        'api_key' => env('DEXNOTIFY_API_KEY'),
+        'sender' => env('DEXNOTIFY_SENDER', 'DEXCHANGE'),
+        'timeout' => (int) env('DEXNOTIFY_TIMEOUT', 10),
+        // WhatsApp (facultatif) : copie du code de retrait via un modèle validé par Meta.
+        'whatsapp_account_id' => env('DEXNOTIFY_WHATSAPP_ACCOUNT_ID'),
+        'whatsapp_withdrawal_template' => env('DEXNOTIFY_WHATSAPP_WITHDRAWAL_TEMPLATE'),
+        'whatsapp_language' => env('DEXNOTIFY_WHATSAPP_LANGUAGE', 'fr'),
+    ],
+
+    // Ancienne API Dexchange SMS (secours)
     'dexchange' => [
         'api_key' => env('DEXCHANGE_API_KEY'),
         'signature' => env('DEXCHANGE_SIGNATURE', 'DEXCHANGE'),

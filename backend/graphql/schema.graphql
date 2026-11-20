@@ -1,18 +1,21 @@
 "A datetime string with format 'Y-m-d H:i:s', e.g. '2018-05-23 13:43:32'."
 scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
 
-type Query {
-    users: [User!]! @all
-    user(id: ID @eq): User @find
-    
+# Toutes les requêtes exigent un utilisateur connecté (session web ou jeton Sanctum).
+# Les scopes "visibleTo" limitent les données : un agent ne voit que ses propres
+# opérations / son compte, un admin voit tout.
+type Query @guard {
+    users: [User!]! @all(scopes: ["visibleTo"])
+    user(id: ID @eq): User @find(scopes: ["visibleTo"])
+
     clients: [Client!]! @all
     client(id: ID @eq): Client @find
 
-    transactions: [Transaction!]! @all
-    transaction(id: ID @eq): Transaction @find
+    transactions: [Transaction!]! @all(scopes: ["visibleTo"])
+    transaction(id: ID @eq): Transaction @find(scopes: ["visibleTo"])
 
-    wallets: [Wallet!]! @all
-    
+    wallets: [Wallet!]! @all(scopes: ["visibleTo"])
+
     countries: [Country!]! @all
     country(id: ID @eq): Country @find
 }
@@ -22,7 +25,7 @@ type Country {
     name: String!
     code: String!
     currency: String!
-    phone_code: String!
+    phone_code: String
     created_at: DateTime!
     updated_at: DateTime!
 }
@@ -31,6 +34,8 @@ type User {
     id: ID!
     name: String!
     email: String!
+    role: String!
+    is_active: Boolean!
     created_at: DateTime!
     updated_at: DateTime!
     wallet: Wallet @hasOne
@@ -38,16 +43,19 @@ type User {
 
 type Client {
     id: ID!
+    uuid: String
     name: String!
     phone: String!
+    email: String
     created_at: DateTime!
     updated_at: DateTime!
-    transactions: [Transaction!]! @hasMany
+    country: Country @belongsTo
 }
 
 type Wallet {
     id: ID!
     uuid: String!
+    type: String!
     balance: Float!
     currency: String!
     user: User @belongsTo
@@ -57,10 +65,19 @@ type Transaction {
     id: ID!
     uuid: String!
     amount: Float!
+    fee_amount: Float!
+    total_amount: Float!
     currency: String!
     status: String!
     type: String!
     reference: String
+    destination: String
+    recipient_name: String
+    recipient_phone: String
+    sender_receipt_number: String
+    payout_receipt_number: String
+    expires_at: DateTime
+    paid_at: DateTime
     created_at: DateTime!
     sender_wallet: Wallet @belongsTo(relation: "senderWallet")
     payout_wallet: Wallet @belongsTo(relation: "payoutWallet")

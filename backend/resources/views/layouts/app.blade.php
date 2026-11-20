@@ -140,7 +140,7 @@
         // Notification Badge Logic
         async function updateNotificationBadge() {
             try {
-                const res = await fetch("{{ url('/api/transactions/pending-count') }}");
+                const res = await fetch("{{ url('/bo-api/transactions/pending-count') }}");
                 const data = await res.json();
                 const badge = document.getElementById('notification_badge');
                 

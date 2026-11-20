@@ -3,26 +3,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     let transactionsData = [];
 
     // Currency Logic
-    let currentCurrency = localStorage.getItem('selected_currency') || 'USD';
-    const rateMap = typeof RATES !== 'undefined' ? RATES : { 'USD': 1, 'EUR': 0.92, 'XOF': 600 };
-    const symbolMap = typeof SYMBOLS !== 'undefined' ? SYMBOLS : { 'USD': '$', 'EUR': '€', 'XOF': 'CFA' };
+    let currentCurrency = localStorage.getItem('selected_currency') || 'XOF';
 
-    function formatMoney(amount) {
-        const rate = rateMap[currentCurrency] || 1;
-        const symbol = symbolMap[currentCurrency] || '$';
-        const converted = amount * rate;
+    // Les montants sont affichés dans LEUR devise : aucune conversion avec des taux fictifs.
+    function formatMoney(amount, currency) {
+        const cur = currency || currentCurrency || 'XOF';
+        try {
+            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cur }).format(amount);
+        } catch (e) {
+            return new Intl.NumberFormat('fr-FR').format(amount) + ' ' + cur;
+        }
+    }
 
-        return new Intl.NumberFormat('fr-FR', {
-            style: 'currency',
-            currency: currentCurrency === 'XOF' ? 'XOF' : (currentCurrency === 'EUR' ? 'EUR' : 'USD')
-        }).format(converted);
+    function receiptLinks(t) {
+        if (t.type !== 'send') return '';
+        let html = `<a href="/transactions/${t.uuid}/receipt/deposit" target="_blank" rel="noopener" class="text-indigo-600 hover:underline mr-3">Envoi</a>`;
+        if (t.status === 'completed') {
+            html += `<a href="/transactions/${t.uuid}/receipt/withdrawal" target="_blank" rel="noopener" class="text-green-600 hover:underline">Retrait</a>`;
+        }
+        return html;
     }
 
     async function renderDashboard() {
         if (!transactionsData.length) return;
 
         // Total Volume
-        const totalVolume = transactionsData.reduce((acc, t) => acc + parseFloat(t.amount), 0);
+        const totalVolume = transactionsData
+            .filter(t => t.type === 'send' && t.currency === currentCurrency && ['pending', 'completed'].includes(t.status))
+            .reduce((acc, t) => acc + parseFloat(t.amount), 0);
         document.getElementById('stat-volume').innerText = formatMoney(totalVolume);
 
         // Render Table
@@ -38,13 +46,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span class="block text-xs text-gray-400">${t.client ? t.client.phone : ''}</span>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-600 capitalize">${t.type}</td>
-                    <td class="px-6 py-4 text-sm font-bold text-gray-900 text-right">${formatMoney(t.amount)}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-gray-900 text-right">${formatMoney(t.amount, t.currency)}</td>
                     <td class="px-6 py-4">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(t.status)}">
                             ${t.status}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-500">${new Date(t.created_at).toLocaleDateString()}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${new Date(t.created_at).toLocaleDateString('fr-FR')}</td>
+                    <td class="px-6 py-4 text-sm">${receiptLinks(t)}</td>
                 </tr>
             `;
             tableBody.innerHTML += row;
@@ -69,9 +78,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function fetchStats(filter = 'day') {
         try {
             // Get current currency from state or localstorage
-            const currency = localStorage.getItem('selected_currency') || 'USD';
+            const currency = localStorage.getItem('selected_currency') || 'XOF';
 
-            const res = await fetch(`/api/transactions/stats?filter=${filter}&currency=${currency}`, {
+            const res = await fetch(`/bo-api/transactions/stats?filter=${filter}&currency=${currency}`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',

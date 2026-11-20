@@ -15,7 +15,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // Expire et rembourse les envois non retirés dans le délai (cron : * * * * * php artisan schedule:run)
+        $schedule->command('transfers:expire')->hourly()->withoutOverlapping();
     }
 
     /**

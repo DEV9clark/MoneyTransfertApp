@@ -1,0 +1,89 @@
+# Lancer depuis le dossier backend/ :
+#   docker compose up -d --build
+#   docker compose exec app composer install
+#   docker compose exec app php artisan migrate --seed
+# Back-office : http://localhost:8000
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    image: money_transfer_app
+    container_name: money_transfer_app
+    restart: unless-stopped
+    working_dir: /var/www
+    environment:
+      # Base PostgreSQL installée sur la machine hôte (voir DB_* dans .env)
+      DB_HOST: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./:/var/www
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: money_transfer_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - app
+    networks:
+      - app-network
+
+  # Planificateur Laravel : expiration des pré-envois et des transferts non retirés
+  scheduler:
+    image: money_transfer_app
+    container_name: money_transfer_scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    command: ["sh", "-c", "while true; do php artisan schedule:run --no-interaction; sleep 60; done"]
+    environment:
+      DB_HOST: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - app
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    container_name: money_transfer_redis
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Base MySQL optionnelle (non démarrée par défaut) : docker compose --profile mysql up -d
+  # Pour l'utiliser : DB_CONNECTION=mysql, DB_HOST=db, DB_PORT=3306 dans .env
+  db:
+    image: mysql:8.0
+    container_name: money_transfer_db
+    restart: unless-stopped
+    profiles: ["mysql"]
+    environment:
+      MYSQL_DATABASE: money_transfer
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-password}
+      MYSQL_USER: ${DB_USERNAME:-user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "3307:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  dbdata:

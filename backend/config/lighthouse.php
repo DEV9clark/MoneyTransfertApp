@@ -28,6 +28,11 @@ return [
          * make sure to return spec-compliant responses in case an error is thrown.
          */
         'middleware' => [
+            // Session web (le back-office interroge GraphQL avec son cookie de session).
+            \App\Http\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+
             Nuwave\Lighthouse\Support\Http\Middleware\AcceptJson::class,
 
             // Logs in a user if they are authenticated. In contrast to Laravel's 'auth'
@@ -57,7 +62,7 @@ return [
     |
     */
 
-    'guard' => 'api',
+    'guard' => 'sanctum', // session web OU jeton Bearer ; toutes les requêtes exigent @guard (voir schema.graphql)
 
     /*
     |--------------------------------------------------------------------------

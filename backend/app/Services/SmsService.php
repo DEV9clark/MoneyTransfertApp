@@ -2,136 +2,152 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
+use App\Services\Sms\DexchangeDriver;
+use App\Services\Sms\DexNotifyDriver;
+use App\Services\Sms\SmsDriver;
+use App\Services\Sms\SmsResult;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
+/**
+ * Envoi des SMS de l'application.
+ *
+ * Les prestataires sont essayés dans l'ordre de SMS_DRIVERS (par défaut : dexnotify, puis dexchange
+ * en secours). Le contenu des messages n'est jamais journalisé : il peut contenir un code secret.
+ */
 class SmsService
 {
-    /**
-     * API key Dexchange.
-     */
-    protected string $apiKey;
+    /** @var array<string, class-string<SmsDriver>> */
+    protected const DRIVERS = [
+        'dexnotify' => DexNotifyDriver::class,
+        'dexchange' => DexchangeDriver::class,
+    ];
 
     /**
-     * Signature de l'expéditeur (DEXCHANGE).
+     * @param string      $phone             numéro national ou international
+     * @param string|null $countryPhoneCode  indicatif à ajouter s'il manque (ex. 221)
+     * @param string|null $idempotencyKey    identifiant unique du message (anti-doublon)
      */
-    protected string $signature;
-
-    /**
-     * Endpoint de l'API Dexchange.
-     */
-    protected string $endpoint;
-
-    public function __construct()
+    public function sendSms(string $phone, string $message, ?string $countryPhoneCode = null, ?string $idempotencyKey = null): array
     {
-        $this->apiKey = config('services.dexchange.api_key');
-        $this->signature = config('services.dexchange.signature', 'DEXCHANGE');
-        $this->endpoint = config('services.dexchange.endpoint', 'https://api.dexchange-sms.com/api/v1/send/sms');
-    }
+        $msisdn = $this->formatPhone($phone, $countryPhoneCode);
+        $tried = [];
 
-    /**
-     * Envoie un SMS via Dexchange.
-     *
-     * @param string $phone     Numéro de téléphone (format international, ex: 221771234567)
-     * @param string $message   Contenu du message
-     * @param string|null $countryPhoneCode Indicatif pays (ex: +221, 221) pour préfixer si absent
-     * @return array            Réponse de l'API
-     * @throws Exception
-     */
-    public function sendSms(string $phone, string $message, ?string $countryPhoneCode = null): array
-    {
-        // Validation du numéro
-        $phone = $this->formatPhone($phone, $countryPhoneCode);
-
-        if (empty($this->apiKey))
-        {
-            Log::warning('[SmsService] Aucune clé API Dexchange configurée. SMS non envoyé.', [
-                'phone'   => $phone,
-                'message' => $message,
-            ]);
-            return [
-                'success' => false,
-                'message' => 'API key non configurée (DEXCHANGE_API_KEY)',
-            ];
-        }
-
-        $payload = [
-            'signature' => $this->signature,
-            'content' => $message,
-            'number' => [$phone],
-        ];
-
-        try
-        {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'Content-Type' => 'application/json',
-            ])->post($this->endpoint, $payload);
-
-            $body = $response->json();
-
-            if ($response->successful())
-            {
-                Log::info('[SmsService] SMS envoyé avec succès', [
-                    'phone' => $phone,
-                    'response' => $body,
-                ]);
-
-                return [
-                    'success' => true,
-                    'data' => $body,
-                ];
+        foreach ($this->drivers() as $driver) {
+            if (!$driver->isConfigured()) {
+                continue;
             }
 
-            Log::error('[SmsService] Échec envoi SMS', [
-                'phone' => $phone,
-                'status' => $response->status(),
-                'response' => $body,
-            ]);
+            $result = $driver->send($msisdn, $message, $idempotencyKey);
+            $tried[] = $driver->name();
 
-            return [
-                'success' => false,
-                'message' => $body['message'] ?? 'Erreur API Dexchange (HTTP ' . $response->status() . ')',
-            ];
-        }
-        catch (Exception $e)
-        {
-            Log::error('[SmsService] Exception lors de l\'envoi SMS', [
-                'phone' => $phone,
-                'error' => $e->getMessage(),
-            ]);
+            if ($result->success) {
+                Log::info('[SMS] envoyé', ['driver' => $result->driver, 'phone' => $msisdn, 'id' => $result->messageId]);
 
-            return [
-                'success' => false,
-                'message' => 'Erreur de connexion à Dexchange : ' . $e->getMessage(),
-            ];
+                return $result->toArray();
+            }
+
+            Log::warning('[SMS] échec, prestataire suivant', [
+                'driver' => $result->driver, 'phone' => $msisdn, 'status' => $result->status, 'error' => $result->error,
+            ]);
         }
+
+        if (!$tried) {
+            Log::warning('[SMS] aucun prestataire configuré (DEXNOTIFY_API_KEY / DEXCHANGE_API_KEY). SMS non envoyé.', ['phone' => $msisdn]);
+
+            return (new SmsResult(false, 'none', null, 'Aucun prestataire SMS configuré'))->toArray();
+        }
+
+        Log::error('[SMS] tous les prestataires ont échoué', ['phone' => $msisdn, 'drivers' => $tried]);
+
+        return (new SmsResult(false, end($tried), null, 'Envoi impossible (' . implode(', ', $tried) . ')'))->toArray();
     }
 
     /**
-     * Envoie le code de retrait au client.
+     * Copie WhatsApp du code de retrait, si DEXNOTIFY_WHATSAPP_ACCOUNT_ID et le modèle sont configurés.
+     * Le modèle Meta attend 4 variables : montant, expéditeur, référence, code.
      */
-    public function sendWithdrawalCode(string $phone, string $code, float $amount, string $currency, ?string $countryPhoneCode = null): array
+    public function sendWithdrawalCodeWhatsApp(string $phone, string $code, string $reference, float $amount, string $currency, string $senderName, ?string $countryPhoneCode = null, ?string $idempotencyKey = null): ?array
     {
-        $message = "Votre transfert de {$amount} {$currency} est prêt. "
-            . "Utilisez le code de retrait : {$code}. "
-            . "Partagez ce code avec l'agent pour recevoir vos fonds. "
-            . "Merci de votre confiance.";
+        $template = (string) config('services.dexnotify.whatsapp_withdrawal_template');
+        if ($template === '' || (string) config('services.dexnotify.whatsapp_account_id') === '' || !(new DexNotifyDriver())->isConfigured()) {
+            return null;
+        }
 
-        return $this->sendSms($phone, $message, $countryPhoneCode);
+        $result = (new DexNotifyDriver())->sendWhatsAppTemplate(
+            $this->formatPhone($phone, $countryPhoneCode),
+            $template,
+            [$this->money($amount, $currency), $senderName, $reference, $code],
+            $idempotencyKey ? 'wa-' . $idempotencyKey : null
+        );
+
+        if (!$result->success) {
+            Log::warning('[WhatsApp] échec envoi code de retrait', ['status' => $result->status, 'error' => $result->error]);
+        }
+
+        return $result->toArray();
+    }
+
+    /** @return SmsDriver[] */
+    protected function drivers(): array
+    {
+        $names = array_filter(array_map('trim', explode(',', (string) config('services.sms.drivers', 'dexnotify,dexchange'))));
+
+        return array_values(array_filter(array_map(
+            fn ($name) => isset(static::DRIVERS[$name]) ? app(static::DRIVERS[$name]) : null,
+            $names
+        )));
     }
 
     /**
-     * Envoie la confirmation de paiement au client.
+     * Code de retrait envoyé au BÉNÉFICIAIRE uniquement.
      */
-    public function sendPaymentConfirmation(string $phone, string $reference, float $amount, string $currency, ?string $countryPhoneCode = null): array
+    public function sendWithdrawalCode(string $phone, string $code, string $reference, float $amount, string $currency, string $senderName, ?string $expiresAt = null, ?string $countryPhoneCode = null, ?string $idempotencyKey = null): array
     {
-        $message = "Paiement effectué avec succès ! "
-            . "Réf: {$reference}, Montant: {$amount} {$currency}. "
+        $message = "Vous avez recu " . $this->money($amount, $currency) . " de {$senderName}. "
+            . "Ref: {$reference}. Code de retrait: {$code}. "
+            . ($expiresAt ? "Valable jusqu'au {$expiresAt}. " : '')
+            . "Presentez ce code et votre piece d'identite a l'agent. Ne le communiquez a personne d'autre.";
+
+        return $this->sendSms($phone, $message, $countryPhoneCode, $idempotencyKey);
+    }
+
+    /**
+     * Confirmation d'envoi à l'EXPÉDITEUR (sans le code de retrait).
+     */
+    public function sendTransferConfirmation(string $phone, string $reference, float $amount, float $fee, string $currency, string $recipientName, ?string $countryPhoneCode = null, ?string $idempotencyKey = null): array
+    {
+        $message = "Votre envoi de " . $this->money($amount, $currency) . " a {$recipientName} est enregistre. "
+            . "Ref: {$reference}. Frais: " . $this->money($fee, $currency) . ". "
+            . "Le code de retrait a ete envoye au beneficiaire. Merci de votre confiance.";
+
+        return $this->sendSms($phone, $message, $countryPhoneCode, $idempotencyKey);
+    }
+
+    /**
+     * Confirmation de paiement (retrait effectué).
+     */
+    public function sendPaymentConfirmation(string $phone, string $reference, float $amount, string $currency, ?string $countryPhoneCode = null, ?string $idempotencyKey = null): array
+    {
+        $message = "Le transfert Ref: {$reference} de " . $this->money($amount, $currency) . " a ete paye au beneficiaire. "
             . "Merci de votre confiance.";
 
-        return $this->sendSms($phone, $message, $countryPhoneCode);
+        return $this->sendSms($phone, $message, $countryPhoneCode, $idempotencyKey);
+    }
+
+    /**
+     * Annulation / expiration : l'expéditeur est informé du remboursement.
+     */
+    public function sendCancellationNotice(string $phone, string $reference, float $amount, string $currency, ?string $countryPhoneCode = null, ?string $idempotencyKey = null): array
+    {
+        $message = "Le transfert Ref: {$reference} de " . $this->money($amount, $currency) . " a ete annule. "
+            . "Presentez-vous a votre agent pour le remboursement.";
+
+        return $this->sendSms($phone, $message, $countryPhoneCode, $idempotencyKey);
+    }
+
+    private function money(float $amount, string $currency): string
+    {
+        return number_format($amount, $amount == floor($amount) ? 0 : 2, ',', ' ') . ' ' . $currency;
     }
 
     /**

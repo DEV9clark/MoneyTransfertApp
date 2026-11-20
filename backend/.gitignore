@@ -13,3 +13,7 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+.env.mysql
+.env.postgres
+.env.*.local
+/storage/logs/*.log

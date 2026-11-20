@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Indispensable en release : sans cette permission l'APK ne peut pas joindre l'API -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="mobile"
+        android:label="Money Transfer"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

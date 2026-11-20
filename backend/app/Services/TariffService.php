@@ -2,28 +2,50 @@
 
 namespace App\Services;
 
+use App\Exceptions\TransferException;
 use App\Models\Tariff;
 
 class TariffService
 {
     /**
-     * Calculate the fee for a given amount and transaction type.
+     * Calcule les frais d'un envoi.
      *
-     * @param float $amount
-     * @param string $type
-     * @return float
+     * On retient la tranche dont le minimum est le plus élevé tout en restant <= montant.
+     * Un montant qui tombe "entre" deux tranches (ex. 5000,50 entre 0-5000 et 5001-10000)
+     * prend donc la tranche inférieure. Au-delà de la dernière tranche plafonnée,
+     * l'envoi est refusé au lieu d'être gratuit.
+     *
+     * @throws TransferException
      */
     public function calculateFee(float $amount, string $type = 'send'): float
     {
-        $tariff = Tariff::where('type', $type)
+        $tariffs = Tariff::where('type', $type);
+
+        if (!(clone $tariffs)->exists()) {
+            if ($type === 'send') {
+                throw new TransferException("Aucune grille tarifaire n'est configurée pour les envois.");
+            }
+            return 0.0;
+        }
+
+        $tariff = (clone $tariffs)
             ->where('min_amount', '<=', $amount)
-            ->where(function ($query) use ($amount) {
-                $query->where('max_amount', '>=', $amount)
-                      ->orWhereNull('max_amount');
-            })
+            ->orderByDesc('min_amount')
             ->first();
 
-        // If no tariff found, maybe default to 0
-        return $tariff ? $tariff->fee_amount : 0;
+        if (!$tariff) {
+            throw new TransferException('Montant inférieur au minimum autorisé.');
+        }
+
+        if ($tariff->max_amount !== null && $amount > $tariff->max_amount) {
+            $hasHigherTranche = (clone $tariffs)->where('min_amount', '>', $amount)->exists();
+            if (!$hasHigherTranche) {
+                throw new TransferException(
+                    'Montant supérieur au plafond de la grille tarifaire (' . number_format($tariff->max_amount, 0, ',', ' ') . ').'
+                );
+            }
+        }
+
+        return round((float) $tariff->fee_amount, 2);
     }
 }

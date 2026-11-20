@@ -2,152 +2,221 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\TransferException;
 use App\Http\Controllers\Controller;
+use App\Models\Transaction;
+use App\Services\AuditLogger;
+use App\Services\TariffService;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
-use Exception;
-use App\Models\Transaction;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\Rule;
 
 class TransactionController extends Controller
 {
-    protected $transactionService;
-    protected $tariffService;
+    protected TransactionService $transactionService;
+    protected TariffService $tariffService;
 
-    public function __construct(TransactionService $transactionService, \App\Services\TariffService $tariffService)
+    public function __construct(TransactionService $transactionService, TariffService $tariffService)
     {
         $this->transactionService = $transactionService;
         $this->tariffService = $tariffService;
     }
 
+    /**
+     * Envoi d'argent. Le code de retrait part par SMS au bénéficiaire et n'est PAS renvoyé à l'agent
+     * (sauf TRANSFER_SHOW_CODE_TO_AGENT=true, réservé au développement).
+     */
     public function transfer(Request $request)
     {
-        $validated = $request->validate([
-            'client_name'   => 'required|string',
-            'client_phone'  => 'required|string',
-            'amount'        => 'required|numeric|min:1',
-            'type'          => 'required|in:send,withdraw',
-            'destination'   => 'required_if:type,send|string|nullable',
-            'recipient_name'=> 'required_if:type,send|string|nullable',
-            'recipient_phone'=> 'required_if:type,send|string|nullable',
+        $idTypes = array_keys(config('transfer.id_types'));
+        $requireSenderId = (bool) config('transfer.require_sender_id');
+
+        $data = $request->validate([
+            'type' => 'nullable|in:send',
+            'client_name' => 'required|string|max:255',
+            'client_phone' => 'required|string|max:20',
+            'client_country_id' => 'nullable|exists:countries,id',
+            'sender_id_type' => [$requireSenderId ? 'required' : 'nullable', Rule::in($idTypes)],
+            'sender_id_number' => [$requireSenderId ? 'required' : 'nullable', 'required_with:sender_id_type', 'string', 'max:50'],
+            'amount' => 'required|numeric|min:1',
+            'destination_country_id' => 'required_without:destination|nullable|exists:countries,id',
+            'destination' => 'required_without:destination_country_id|nullable|string|max:100',
+            'recipient_name' => 'required|string|max:255',
+            'recipient_phone' => 'required|string|max:20',
         ]);
 
-        try {
-            // Calculate Tariff
-            $amount = (float) $request->amount;
-            $type = $request->type;
-            $fee = $this->tariffService->calculateFee($amount, $type);
-            $total = $amount + $fee;
+        return $this->handle(function () use ($request, $data) {
+            [$transaction, $code] = $this->transactionService->initiateTransfer($request->user(), $data);
 
-            $data = [
-                'client_name' => $request->client_name,
-                'client_phone' => $request->client_phone,
-                'amount' => $amount,
-                'fee_amount' => $fee,
-                'total_amount' => $total,
-                'type' => $type,
-                'destination' => $request->destination,
-                'recipient_name' => $request->recipient_name,
-                'recipient_phone' => $request->recipient_phone,
+            $response = [
+                'message' => 'Transfert enregistré. Le code de retrait a été envoyé par SMS au bénéficiaire.',
+                'data' => $transaction,
+                'reference' => $transaction->reference,
+                'receipt_url' => url("/api/transactions/{$transaction->uuid}/receipt/deposit"),
             ];
 
-            $transaction = $this->transactionService->initiateTransfer(
-                $request->user(),
-                $data
-            );
+            if (config('transfer.show_code_to_agent')) {
+                $response['code'] = $code;
+            }
 
-            return response()->json([
-                'message' => 'Transfer initiated',
-                'data'    => $transaction,
-                'code'    => $transaction->reference
-            ]);
-        } catch (Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 400);
-        }
+            return response()->json($response, 201);
+        });
     }
 
+    /**
+     * Étape 1 du retrait : vérifier le code et afficher les détails à contrôler (identité du bénéficiaire).
+     */
+    public function verifyCode(Request $request)
+    {
+        $request->validate(['code' => 'required|string|max:20']);
+
+        if ($blocked = $this->tooManyAttempts($request)) {
+            return $blocked;
+        }
+
+        return $this->handle(function () use ($request) {
+            try {
+                $transaction = $this->transactionService->findPayableByCode($request->code);
+            } catch (TransferException $e) {
+                $this->recordFailedAttempt($request);
+                throw $e;
+            }
+
+            RateLimiter::clear($this->attemptKey($request));
+            AuditLogger::log('transfer.code_verified', $transaction);
+
+            return response()->json(['data' => [
+                'uuid' => $transaction->uuid,
+                'reference' => $transaction->reference,
+                'amount' => $transaction->amount,
+                'currency' => $transaction->currency,
+                'sender' => optional($transaction->client)->name,
+                'sender_phone' => optional($transaction->client)->phone,
+                'recipient_name' => $transaction->recipient_name,
+                'recipient_phone' => $transaction->recipient_phone,
+                'destination' => optional($transaction->destinationCountry)->name ?? $transaction->destination,
+                'created_at' => $transaction->created_at->format('Y-m-d H:i'),
+                'expires_at' => optional($transaction->expires_at)->format('Y-m-d'),
+            ]]);
+        });
+    }
+
+    /**
+     * Étape 2 du retrait : paiement, après contrôle de la pièce d'identité du bénéficiaire.
+     */
     public function withdraw(Request $request)
     {
-        $request->validate([
-            'code' => 'required|string',
+        $data = $request->validate([
+            'code' => 'required|string|max:20',
+            'recipient_id_type' => ['required', Rule::in(array_keys(config('transfer.id_types')))],
+            'recipient_id_number' => 'required|string|max:50',
         ]);
 
-        try {
-            $transaction = $this->transactionService->completeTransfer(
-                $request->user(),
-                $request->code
-            );
+        if ($blocked = $this->tooManyAttempts($request)) {
+            return $blocked;
+        }
+
+        return $this->handle(function () use ($request, $data) {
+            try {
+                $transaction = $this->transactionService->completeTransfer($request->user(), $data['code'], $data);
+            } catch (TransferException $e) {
+                if ($e->getStatus() === 404) {
+                    $this->recordFailedAttempt($request);
+                }
+                throw $e;
+            }
+
+            RateLimiter::clear($this->attemptKey($request));
 
             return response()->json([
-                'message' => 'Transfer completed',
-                'data'    => $transaction
+                'message' => 'Paiement effectué.',
+                'data' => $transaction,
+                'receipt_url' => url("/api/transactions/{$transaction->uuid}/receipt/withdrawal"),
             ]);
-        } catch (Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 400);
+        });
+    }
+
+    public function show(Request $request, Transaction $transaction)
+    {
+        if (!$transaction->isVisibleTo($request->user())) {
+            return response()->json(['message' => 'Transaction introuvable.'], 404);
         }
+
+        return response()->json(['data' => $transaction->load(['client', 'destinationCountry', 'creator', 'payer'])]);
+    }
+
+    public function cancel(Request $request, Transaction $transaction)
+    {
+        $data = $request->validate(['reason' => 'required|string|max:255']);
+        $user = $request->user();
+
+        $isSender = $user->wallet && (int) $transaction->sender_wallet_id === (int) $user->wallet->id;
+        if (!$user->isAdmin() && !$isSender) {
+            return response()->json(['message' => "Seul l'agent expéditeur ou un admin peut annuler."], 403);
+        }
+
+        return $this->handle(function () use ($transaction, $user, $data) {
+            $transaction = $this->transactionService->cancel($transaction, $user, $data['reason']);
+
+            return response()->json(['message' => 'Transfert annulé et remboursé.', 'data' => $transaction]);
+        });
+    }
+
+    public function resendCode(Request $request, Transaction $transaction)
+    {
+        $user = $request->user();
+        $isSender = $user->wallet && (int) $transaction->sender_wallet_id === (int) $user->wallet->id;
+        if (!$user->isAdmin() && !$isSender) {
+            return response()->json(['message' => 'Action non autorisée.'], 403);
+        }
+
+        return $this->handle(function () use ($transaction, $user) {
+            $this->transactionService->resendCode($transaction, $user);
+
+            return response()->json(['message' => 'Un nouveau code a été envoyé au bénéficiaire.']);
+        });
     }
 
     public function balance(Request $request)
     {
-        $balance = $this->transactionService->getBalance($request->user());
-        return response()->json(['balance' => $balance]);
+        return response()->json($this->transactionService->getBalance($request->user()));
     }
 
     public function history(Request $request)
     {
-        $history = $this->transactionService->getHistory($request->user());
-        return response()->json(['data' => $history]);
+        return response()->json(
+            $this->transactionService->getHistory($request->user(), (int) $request->get('per_page', 30))
+        );
     }
 
     public function calculateFees(Request $request)
     {
         $request->validate([
             'amount' => 'required|numeric|min:0',
-            'type'   => 'required|string'
+            'type' => 'nullable|string',
         ]);
 
         $amount = (float) $request->amount;
-        $fee = $this->tariffService->calculateFee($amount, $request->type);
 
-        return response()->json([
-            'amount' => $amount,
-            'fee'    => $fee,
-            'total'  => $amount + $fee
-        ]);
+        return $this->handle(function () use ($amount) {
+            $fee = $this->tariffService->calculateFee($amount, 'send');
+
+            return response()->json([
+                'amount' => $amount,
+                'fee' => $fee,
+                'total' => round($amount + $fee, 2),
+            ]);
+        });
     }
 
-    public function verifyCode(Request $request)
+    /** Envois en attente de retrait : ceux de l'agent, ou tout le réseau pour un admin. */
+    public function pendingCount(Request $request)
     {
-        $request->validate(['code' => 'required|string']);
-
-        $transaction = Transaction::where('reference', $request->code)
-            ->where('status', 'pending')
-            ->where('type', 'send') // Only send transactions can be withdrawn
-            ->with('client') // Load sender info
-            ->first();
-
-        if (!$transaction) {
-            return response()->json(['message' => 'Invalid or already processed code.'], 404);
-        }
-
-        return response()->json([
-            'data' => [
-                'reference' => $transaction->reference,
-                'amount' => $transaction->amount,
-                'currency' => $transaction->currency,
-                'sender' => $transaction->client->name,
-                'sender_phone' => $transaction->client->phone,
-                'recipient_name' => $transaction->recipient_name,
-                'recipient_phone' => $transaction->recipient_phone,
-                'created_at' => $transaction->created_at->format('Y-m-d H:i')
-            ]
-        ]);
-    }
-
-    public function pendingCount()
-    {
-        // Count transactions that are pending and are of type 'send' (receivable)
-        $count = Transaction::where('status', 'pending')
-            ->where('type', 'send')
+        $count = Transaction::visibleTo($request->user())
+            ->where('status', Transaction::STATUS_PENDING)
+            ->where('type', Transaction::TYPE_SEND)
             ->count();
 
         return response()->json(['count' => $count]);
@@ -155,56 +224,85 @@ class TransactionController extends Controller
 
     public function stats(Request $request)
     {
-        $filter = $request->get('filter', 'day'); // day, week, month, year
-        $currency = $request->get('currency', 'USD'); // Default to USD if not provided
-        
-        $query = Transaction::query();
-        
-        // Apply Currency Filter
-        $query->where('currency', $currency);
+        $user = $request->user();
+        $filter = $request->get('filter', 'day');
+        $currency = $request->get('currency') ?: optional($user->wallet)->currency ?: 'XOF';
 
-        // Apply Time Filter
+        $base = Transaction::visibleTo($user)
+            ->reorder()
+            ->where('type', Transaction::TYPE_SEND)
+            ->where('currency', $currency);
+
         switch ($filter) {
             case 'week':
-                $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+                $base->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
                 break;
             case 'month':
-                $query->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year);
+                $base->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
                 break;
             case 'year':
-                $query->whereYear('created_at', now()->year);
+                $base->whereBetween('created_at', [now()->startOfYear(), now()->endOfYear()]);
                 break;
-            case 'day':
             default:
-                $query->whereDate('created_at', now());
-                break;
+                $filter = 'day';
+                $base->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()]);
         }
 
-        // Calculate Stats
-        $volume = $query->sum('amount');
-        $count = $query->count();
-        $fees = 0;
-
-        // Only calculate fees if user is admin
-        if ($request->user()->role === 'admin') {
-            // Calculate fees: sum of (total_amount - amount) for 'send' transactions
-            // Alternatively, use a stored 'fee_amount' column if it exists.
-            // Based on previous code, we calculate fee dynamically but don't seem to store it explicitly as 'fee_amount' in the database schema yet, 
-            // wait, looking at the transfer method:
-            // 'fee_amount' => $fee, 
-            // 'total_amount' => $total,
-            // These seem to be passed to initateTransfer. Let's assume they are stored in JSON or columns.
-            // I'll check migration later, but for now let's sum 'fee' column if it exists or do the math.
-            // Checking migration 2026_01_31_071506_add_details_to_transactions_table.php ...
-            // It added 'fee_amount' and 'total_amount'.
-            $fees = $query->sum('fee_amount'); 
-        }
+        $valid = (clone $base)->whereIn('status', [Transaction::STATUS_PENDING, Transaction::STATUS_COMPLETED]);
 
         return response()->json([
-            'volume' => $volume,
-            'count' => $count,
-            'fees' => $fees,
-            'filter' => $filter
+            'volume' => (float) (clone $valid)->sum('amount'),
+            'count' => (clone $valid)->count(),
+            'pending' => (clone $base)->where('status', Transaction::STATUS_PENDING)->count(),
+            'completed' => (clone $base)->where('status', Transaction::STATUS_COMPLETED)->count(),
+            'fees' => $user->isAdmin() ? (float) (clone $valid)->sum('fee_amount') : 0,
+            'currency' => $currency,
+            'filter' => $filter,
         ]);
+    }
+
+    // ---------------------------------------------------------------------
+
+    /**
+     * Exécute une action métier : erreurs métier => message clair, erreurs techniques => message générique
+     * (le détail est journalisé, jamais exposé au client).
+     */
+    private function handle(callable $action)
+    {
+        try {
+            return $action();
+        } catch (TransferException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getStatus());
+        } catch (\Throwable $e) {
+            Log::error('[TransactionController] ' . $e->getMessage(), ['exception' => $e]);
+
+            return response()->json(['message' => 'Erreur interne. Réessayez ou contactez le support.'], 500);
+        }
+    }
+
+    private function attemptKey(Request $request): string
+    {
+        return 'withdrawal-code:' . optional($request->user())->id . ':' . $request->ip();
+    }
+
+    private function tooManyAttempts(Request $request)
+    {
+        $key = $this->attemptKey($request);
+        if (RateLimiter::tooManyAttempts($key, (int) config('transfer.max_code_attempts', 5))) {
+            $minutes = (int) ceil(RateLimiter::availableIn($key) / 60);
+            AuditLogger::log('transfer.code_blocked');
+
+            return response()->json([
+                'message' => "Trop de codes erronés. Réessayez dans {$minutes} minute(s).",
+            ], 429);
+        }
+
+        return null;
+    }
+
+    private function recordFailedAttempt(Request $request): void
+    {
+        RateLimiter::hit($this->attemptKey($request), 60 * (int) config('transfer.code_attempts_decay_minutes', 15));
+        AuditLogger::log('transfer.code_failed');
     }
 }

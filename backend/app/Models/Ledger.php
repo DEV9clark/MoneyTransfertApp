@@ -17,6 +17,11 @@ class Ledger extends Model
         'type',
     ];
 
+    protected $casts = [
+        'amount' => 'float',
+        'balance_after' => 'float',
+    ];
+
     public function transaction()
     {
         return $this->belongsTo(Transaction::class);

@@ -59,5 +59,32 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
         });
+
+        // Connexion : 5 tentatives / minute par email + IP (anti force brute).
+        RateLimiter::for('login', function (Request $request) {
+            return Limit::perMinute(5)->by(strtolower((string) $request->input('email')) . '|' . $request->ip());
+        });
+
+        // Application client : envois de SMS limités (coût + anti-harcèlement), PIN limité par numéro.
+        RateLimiter::for('client-otp', function (Request $request) {
+            $phone = preg_replace('/\D/', '', (string) $request->input('phone'));
+            return [
+                Limit::perMinutes(10, 3)->by('otp-phone:' . $phone),
+                Limit::perHour(10)->by('otp-ip:' . $request->ip()),
+            ];
+        });
+        RateLimiter::for('client-auth', function (Request $request) {
+            $phone = preg_replace('/\D/', '', (string) $request->input('phone'));
+            return [
+                Limit::perMinute(10)->by('client-auth:' . $phone . '|' . $request->ip()),
+                Limit::perMinute(30)->by('client-auth-ip:' . $request->ip()),
+            ];
+        });
+
+        // Vérification / paiement d'un code de retrait : 10 requêtes / minute par agent.
+        // (Les codes ERRONÉS sont en plus limités à TRANSFER_MAX_CODE_ATTEMPTS par 15 min.)
+        RateLimiter::for('withdrawal', function (Request $request) {
+            return Limit::perMinute(10)->by(optional($request->user())->id ?: $request->ip());
+        });
     }
 }

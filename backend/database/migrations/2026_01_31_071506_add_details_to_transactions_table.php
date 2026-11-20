@@ -30,6 +30,7 @@ class AddDetailsToTransactionsTable extends Migration
     public function down()
     {
         Schema::table('transactions', function (Blueprint $table) {
+            $table->dropColumn(['destination', 'recipient_name', 'recipient_phone', 'fee_amount', 'total_amount']);
             //
         });
     }
