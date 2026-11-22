@@ -4,6 +4,9 @@
 #   docker compose exec app php artisan migrate --seed
 # Back-office : http://localhost:8000
 
+# Nom de projet fixe : indépendant du dossier d'où l'on lance la commande.
+name: money_transfer
+
 services:
   app:
     build:

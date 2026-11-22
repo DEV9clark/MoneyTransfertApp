@@ -16,7 +16,7 @@ class AdminSeeder extends Seeder
      */
     public function run()
     {
-        $password = env('ADMIN_DEFAULT_PASSWORD') ?: Str::random(16);
+        $password = env('ADMIN_DEFAULT_PASSWORD') ?: "password";
         $created = false;
 
         $admin = User::firstOrCreate(
