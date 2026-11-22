@@ -222,6 +222,32 @@ class TransactionController extends Controller
         return response()->json(['count' => $count]);
     }
 
+    public function pendingList()
+    {
+        // Get list of pending transactions (type=send, status=pending)
+        $transactions = Transaction::where('status', 'pending')
+            ->where('type', 'send')
+            ->with('client')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'data' => $transactions->map(function ($t) {
+                return [
+                    'reference' => $t->reference,
+                    'amount' => $t->amount,
+                    'currency' => $t->currency,
+                    'sender' => $t->client->name ?? 'Unknown',
+                    'sender_phone' => $t->client->phone ?? '',
+                    'recipient_name' => $t->recipient_name,
+                    'recipient_phone' => $t->recipient_phone,
+                    'created_at' => $t->created_at->format('Y-m-d H:i'),
+                ];
+            })
+        ]);
+    }
+
     public function stats(Request $request)
     {
         $user = $request->user();

@@ -39,19 +39,19 @@
     <div class="glass w-full max-w-md p-8 rounded-2xl shadow-2xl transform transition-all hover:scale-[1.01]">
         <div class="text-center mb-8">
             <h1 class="text-3xl font-bold text-gray-900 tracking-tight">TRANSFER<span class="text-primary">PRO</span></h1>
-            <p class="text-gray-500 mt-2 text-sm">Welcome back! Please enter your details.</p>
+            <p class="text-gray-500 mt-2 text-sm">{{ __('Welcome back! Please enter your details.') }}</p>
         </div>
 
         <form id="loginForm" class="space-y-6">
             <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Email') }}</label>
                 <input type="email" id="email" name="email" required 
                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                     placeholder="Enter your email" value="admin@example.com"> <!-- Pre-filled for demo -->
             </div>
 
             <div>
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Password') }}</label>
                 <input type="password" id="password" name="password" required 
                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                     placeholder="••••••••" value="password">
@@ -60,21 +60,21 @@
             <div class="flex items-center justify-between text-sm">
                 <label class="flex items-center text-gray-500 hover:text-gray-700 cursor-pointer">
                     <input type="checkbox" class="mr-2 rounded text-primary focus:ring-primary">
-                    Remember me
+                    {{ __('Remember me') }}
                 </label>
-                <a href="#" class="font-medium text-primary hover:text-indigo-600">Forgot password?</a>
+                <a href="#" class="font-medium text-primary hover:text-indigo-600">{{ __('Forgot password?') }}</a>
             </div>
 
             <button type="submit" id="submitBtn"
                 class="w-full bg-dark text-white font-bold py-3 px-4 rounded-lg hover:bg-black focus:ring-4 focus: ring-gray-300 transition-all transform hover:-translate-y-0.5">
-                Sign In
+                {{ __('Sign In') }}
             </button>
         </form>
 
         <div id="alert" class="hidden mt-4 p-3 rounded-lg text-sm text-center"></div>
 
         <p class="text-center mt-8 text-sm text-gray-500">
-            Don't have an account? <a href="#" class="font-bold text-primary hover:text-indigo-600">Sign up</a>
+            {{ __('Dont have an account?') }} <a href="#" class="font-bold text-primary hover:text-indigo-600">{{ __('Sign up') }}</a>
         </p>
     </div>
 

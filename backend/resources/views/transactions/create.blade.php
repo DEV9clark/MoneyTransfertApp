@@ -1,8 +1,8 @@
 
 @extends('layouts.app')
 
-@section('title', 'New Transaction')
-@section('header', 'Process Transaction')
+@section('title', __('New Transaction'))
+@section('header', __('Process Transaction'))
 
 @section('content')
 <div class="max-w-3xl mx-auto">
@@ -10,7 +10,7 @@
         <form id="transactionForm">
             <!-- 1. Transaction Type Selector -->
             <div class="mb-8">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Select Transaction Type</label>
+                <label class="block text-gray-700 text-sm font-bold mb-2">{{ __('Select Transaction Type') }}</label>
                 <div class="relative">
                     <select id="transaction_type" name="type" onchange="toggleTransactionMode()" class="block appearance-none w-full bg-indigo-50 border border-indigo-200 text-indigo-900 py-4 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-primary font-bold text-lg">
                         <option value="send">Send Money (Envoi)</option>
@@ -27,8 +27,8 @@
             <div id="send_mode_section">
                 <!-- Client Search / Select -->
                 <div class="mb-6 relative">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Sender (Client)</label>
-                    <input type="text" id="client_search" class="appearance-none block w-full bg-gray-50 text-gray-700 border border-gray-300 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-primary" placeholder="Search Client by Name or Phone..." autocomplete="off">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">{{ __('Sender') }} (Client)</label>
+                    <input type="text" id="client_search" class="appearance-none block w-full bg-gray-50 text-gray-700 border border-gray-300 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-primary" placeholder="{{ __('Search Client by Name or Phone...') }}" autocomplete="off">
                     <input type="hidden" id="client_name" name="client_name">
                     <input type="hidden" id="client_phone" name="client_phone">
                     
@@ -47,7 +47,7 @@
                             <p class="text-green-700 text-sm" id="info_phone"></p>
                         </div>
                     </div>
-                    <button type="button" onclick="clearClient()" class="text-sm font-medium text-green-600 hover:text-green-800 underline">Change</button>
+                    <button type="button" onclick="clearClient()" class="text-sm font-medium text-green-600 hover:text-green-800 underline">{{ __('Change') }}</button>
                 </div>
 
                 <!-- Pièce d'identité de l'expéditeur (figure sur le reçu) -->
@@ -69,14 +69,14 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Amount</label>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">{{ __('Amount') }}</label>
                         <div class="relative">
                             <input class="appearance-none block w-full bg-gray-50 text-gray-700 border border-gray-300 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-primary font-mono text-lg" id="amount" name="amount" type="number" placeholder="0.00" oninput="calculateFees()">
                             <div class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 font-bold">XOF</div>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Total to Pay</label>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">{{ __('Total to Pay') }}</label>
                         <div class="relative">
                             <input class="appearance-none block w-full bg-gray-100 text-gray-900 border border-gray-300 rounded py-3 px-4 leading-tight font-bold text-lg" id="total_amount" type="text" readonly value="0">
                             <div class="absolute inset-y-0 right-0 flex items-center px-3">
@@ -96,8 +96,8 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Recipient Name</label>
-                        <input class="appearance-none block w-full bg-gray-50 text-gray-700 border border-gray-300 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-primary" id="recipient_name" name="recipient_name" type="text" placeholder="Receiver's Full Name">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">{{ __('Recipient Name') }}</label>
+                        <input class="appearance-none block w-full bg-gray-50 text-gray-700 border border-gray-300 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-primary" id="recipient_name" name="recipient_name" type="text" placeholder="{{ __('Receivers Full Name') }}">
                     </div>
                     <div>
                         <label class="block text-gray-700 text-sm font-bold mb-2">Recipient Phone</label>
@@ -117,14 +117,14 @@
                         </div>
                         <div class="ml-3">
                             <p class="text-sm text-yellow-700">
-                                Ask the client for the transaction code received via SMS.
+                                {{ __('Ask the client for the transaction code received via SMS.') }}
                             </p>
                         </div>
                     </div>
                 </div>
 
                 <div class="mb-8">
-                    <label class="block text-gray-700 text-lg font-bold mb-4 text-center">Enter Transaction Code</label>
+                    <label class="block text-gray-700 text-lg font-bold mb-4 text-center">{{ __('Enter Transaction Code') }}</label>
                     <div class="flex justify-center">
                         <input type="text" id="withdraw_code" name="code" class="block w-64 text-center text-3xl font-mono tracking-widest border-2 border-gray-300 rounded-xl py-4 focus:outline-none focus:border-primary focus:ring-4 focus:ring-indigo-100 uppercase" placeholder="12345678" maxlength="12" inputmode="numeric" autocomplete="off">
                     </div>
@@ -170,7 +170,7 @@
             <!-- Submit Button -->
             <div class="flex items-center justify-center pt-4 border-t border-gray-100">
                 <button type="submit" id="submit_btn" class="w-full bg-primary hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl focus:outline-none focus:shadow-outline transition-all transform hover:-translate-y-1 shadow-lg text-lg">
-                    Process Transaction
+                    {{ __('Process Transaction') }}
                 </button>
             </div>
         </form>
@@ -181,23 +181,23 @@
 <div id="verifyModal" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black bg-opacity-50 backdrop-blur-sm">
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden transform transition-all scale-95 opacity-0" id="verifyModalContent">
         <div class="bg-indigo-600 p-6 text-white text-center">
-            <h3 class="text-2xl font-bold">Confirm Withdrawal</h3>
-            <p class="text-indigo-100 mt-1">Please verify details with the client</p>
+            <h3 class="text-2xl font-bold">{{ __('Confirm Withdrawal') }}</h3>
+            <p class="text-indigo-100 mt-1">{{ __('Please verify details with the client') }}</p>
         </div>
         <div class="p-6 space-y-4">
             <div class="flex justify-between border-b pb-2">
-                <span class="text-gray-500">Amount</span>
+                <span class="text-gray-500">{{ __('Amount') }}</span>
                 <span class="font-bold text-xl text-gray-800" id="verify_amount"></span>
             </div>
             <div class="flex justify-between border-b pb-2">
-                <span class="text-gray-500">Sender</span>
+                <span class="text-gray-500">{{ __('Sender') }}</span>
                 <div class="text-right">
                     <div class="font-bold text-gray-800" id="verify_sender"></div>
                     <div class="text-sm text-gray-500" id="verify_sender_phone"></div>
                 </div>
             </div>
             <div class="flex justify-between border-b pb-2">
-                <span class="text-gray-500">Recipient</span>
+                <span class="text-gray-500">{{ __('Recipient') }}</span>
                 <div class="text-right">
                     <div class="font-bold text-gray-800" id="verify_recipient"></div>
                     <div class="text-sm text-gray-500" id="verify_recipient_phone"></div>
@@ -223,10 +223,10 @@
         </div>
         <div class="p-6 bg-gray-50 flex space-x-4">
             <button onclick="closeModal()" class="w-1/2 bg-gray-200 text-gray-800 font-bold py-3 rounded-xl hover:bg-gray-300 transition">
-                Cancel
+                {{ __('Cancel') }}
             </button>
             <button onclick="confirmWithdrawal()" class="w-1/2 bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition shadow-lg">
-                Confirm & Pay
+                {{ __('Confirm & Pay') }}
             </button>
         </div>
     </div>

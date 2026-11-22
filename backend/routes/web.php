@@ -26,6 +26,9 @@ Route::get('/login', function () {
 Route::post('/login', [WebAuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 
+// Language Switch
+Route::get('/lang/{locale}', [App\Http\Controllers\LanguageController::class, 'switch'])->name('lang.switch');
+
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');

@@ -23,7 +23,7 @@ class MoneyTransferClientApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Money Transfer',
+      title: 'NISIS Transfert',
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

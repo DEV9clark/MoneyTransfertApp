@@ -7,7 +7,14 @@
         "laravel"
     ],
     "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "packages/inline-edit"
+        }
+    ],
     "require": {
+        "money-transfer/inline-edit": "@dev",
         "php": "^7.3|^8.0",
         "barryvdh/laravel-dompdf": "^2.0",
         "doctrine/dbal": "^3.0",

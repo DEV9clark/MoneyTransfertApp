@@ -37,12 +37,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         const tableBody = document.getElementById('transactions-table-body');
         tableBody.innerHTML = '';
 
-        transactionsData.slice(0, 5).forEach(t => { // Show last 5
+        // Show ALL transactions
+        const transactionsToShow = transactionsData;
+
+        if (transactionsToShow.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">Aucune transaction trouvée.</td></tr>`;
+            return;
+        }
+
+        transactionsToShow.slice(0, 5).forEach(t => { // Show last 5
+            const convertedAmount = convertAmount(t.amount, t.currency, currentCurrency);
+
             const row = `
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4 text-sm font-medium text-gray-900">#${t.reference || 'N/A'}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">
-                        ${t.client ? t.client.name : 'Unknown'}
+                    <td class="px-6 py-4">
+                        <span class="editable-field text-sm font-medium text-gray-900 cursor-pointer hover:bg-yellow-50 px-2 py-1 rounded transition-colors" 
+                              data-id="${t.id}" 
+                              data-field="client.name"
+                              title="Double-cliquez pour éditer">
+                            ${t.client ? t.client.name : 'Inconnu'}
+                        </span>
                         <span class="block text-xs text-gray-400">${t.client ? t.client.phone : ''}</span>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-600 capitalize">${t.type}</td>
@@ -63,15 +78,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Listen for global currency change
     window.addEventListener('currencyChanged', (e) => {
         currentCurrency = e.detail.currency;
-        // Re-fetch stats with new currency (keeping current filter)
-        // We need to know the current filter. Let's store it globally or read from active button.
-        // For simplicity, default to 'day' or find active. 
-        // Better: let's track activeFilter variable.
         const activeFilter = document.querySelector('button[id^="filter-"].bg-white')?.id.replace('filter-', '') || 'day';
         fetchStats(activeFilter);
-
-        // Also re-render table if needed (amount formatting)
-        renderDashboard();
+        renderDashboard(); // Re-render table with conversions
     });
 
     // Helper to fetch stats
@@ -92,7 +101,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Update Volume
             document.getElementById('stat-volume').innerText = formatMoney(data.volume);
 
-            // Update Profit (if exists)
+            // Profit
+            let totalFeesRef = 0;
             const profitEl = document.getElementById('stat-profit');
             if (profitEl) {
                 // If the data.fees is in the requested currency, just display it.
