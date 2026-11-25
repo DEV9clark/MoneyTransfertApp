@@ -21,7 +21,9 @@ return [
 
     'allowed_origins' => array_filter(explode(',', env('CORS_ALLOWED_ORIGINS', (string) env('APP_URL', '')))),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#',
+    ],
 
     'allowed_headers' => ['*'],
 

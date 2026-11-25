@@ -26,6 +26,23 @@ services:
     networks:
       - app-network
 
+  
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: money_transfer_ngrok
+    restart: unless-stopped
+    command:
+      - http
+      - nginx:80
+      - --url=https://unwesternized-partis-lilli.ngrok-free.dev
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    depends_on:
+      - nginx
+    networks:
+      - app-network
+
+
   nginx:
     image: nginx:alpine
     container_name: money_transfer_nginx
