@@ -50,7 +50,7 @@ class DexNotifyDriver implements SmsDriver
             false,
             $this->name(),
             null,
-            (is_array($body) ? ($body['message'] ?? $body['error'] ?? null) : null) ?? 'HTTP ' . $response->status(),
+            self::extractError($body, $response->status()),
             $response->status()
         );
     }
@@ -85,12 +85,27 @@ class DexNotifyDriver implements SmsDriver
 
         return $response->successful()
             ? new SmsResult(true, 'dexnotify-whatsapp', self::extractId($body), null, $response->status())
-            : new SmsResult(false, 'dexnotify-whatsapp', null, (is_array($body) ? ($body['message'] ?? null) : null) ?? 'HTTP ' . $response->status(), $response->status());
+            : new SmsResult(false, 'dexnotify-whatsapp', null, self::extractError($body, $response->status()), $response->status());
     }
 
     private function url(string $path): string
     {
         return rtrim((string) config('services.dexnotify.url', 'https://api.dexnotify.com/api'), '/') . $path;
+    }
+
+    private static function extractError($body, int $status): string
+    {
+        if (is_array($body)) {
+            $err = $body['message'] ?? $body['error'] ?? null;
+            if (is_string($err) && $err !== '') {
+                return $err;
+            }
+            if (is_array($err) || is_object($err)) {
+                return json_encode($err, JSON_UNESCAPED_UNICODE) ?: 'HTTP ' . $status;
+            }
+        }
+
+        return 'HTTP ' . $status;
     }
 
     private static function extractId($body): ?string

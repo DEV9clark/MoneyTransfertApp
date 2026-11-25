@@ -36,8 +36,13 @@ class DexchangeDriver implements SmsDriver
 
         $body = $response->json() ?? [];
 
+        $err = is_array($body) ? ($body['message'] ?? null) : null;
+        $errMsg = is_string($err) && $err !== ''
+            ? $err
+            : (is_array($err) ? (json_encode($err, JSON_UNESCAPED_UNICODE) ?: 'HTTP ' . $response->status()) : 'HTTP ' . $response->status());
+
         return $response->successful()
             ? new SmsResult(true, $this->name(), null, null, $response->status())
-            : new SmsResult(false, $this->name(), null, (is_array($body) ? ($body['message'] ?? null) : null) ?? 'HTTP ' . $response->status(), $response->status());
+            : new SmsResult(false, $this->name(), null, $errMsg, $response->status());
     }
 }
