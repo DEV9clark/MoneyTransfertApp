@@ -6,7 +6,7 @@
 class AppConfig {
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://findsolution.site/money_transfer_app/api',
+    defaultValue: 'https://unwesternized-partis-lilli.ngrok-free.dev/api',
   );
 
   /// Pays présélectionné à l'ouverture (code ISO).

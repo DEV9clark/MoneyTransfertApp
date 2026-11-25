@@ -48,6 +48,7 @@ class Api {
     return {
       'Accept': accept,
       'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
       if (token != null) 'Authorization': 'Bearer $token',
     };
   }

@@ -1,14 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-<<<<<<< HEAD
     <!-- Indispensable en release : sans cette permission l'APK ne peut pas joindre l'API -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="Money Transfer"
-=======
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <application
         android:label="NISIS Transfert"
->>>>>>> 1fafd14b4fedc65292367161da8388db1a4e3536
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity
