@@ -173,7 +173,7 @@ class _PaymentCodeCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Text(
-              'Montrez ce code à un agent Money Transfer et payez en espèces'
+              'Montrez ce code à un agent Nisi\'s Transfer et payez en espèces'
               '${t.expiresAt != null ? ' avant le ${Fmt.dateTime(t.expiresAt)}' : ''}.',
               textAlign: TextAlign.center,
             ),

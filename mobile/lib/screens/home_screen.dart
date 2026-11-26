@@ -107,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(me != null ? 'Bonjour ${me.firstName}' : 'Money Transfer'),
+        title: Text(me != null ? 'Bonjour ${me.firstName}' : 'Nisi\'s Transfer'),
         actions: [
           PopupMenuButton<String>(
             onSelected: (v) {

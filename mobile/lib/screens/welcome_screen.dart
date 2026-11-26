@@ -114,7 +114,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           children: [
                             Icon(Icons.send_to_mobile, size: 64, color: theme.colorScheme.primary),
                             const SizedBox(height: 16),
-                            Text('Money Transfer', textAlign: TextAlign.center, style: theme.textTheme.headlineMedium),
+                            Text('Nisi\'s Transfert', textAlign: TextAlign.center, style: theme.textTheme.headlineMedium),
                             const SizedBox(height: 8),
                             Text(
                               'Préparez vos envois depuis votre téléphone, payez en agence.',
