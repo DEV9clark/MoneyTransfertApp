@@ -30,7 +30,7 @@ class FakeSms extends SmsService
     public function lastOtp(): ?string
     {
         foreach (array_reverse($this->sent) as $sms) {
-            if (preg_match('/verification Money Transfer : (\d{6})/', $sms['message'], $m)) {
+            if (preg_match('/verification Nisi\'s Transfert : (\d{6})/', $sms['message'], $m)) {
                 return $m[1];
             }
         }

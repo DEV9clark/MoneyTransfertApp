@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Money Transfer - @yield('title', 'Dashboard')</title>
+    <title>Nisi's Transfer - @yield('title', 'Dashboard')</title>
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -48,7 +48,7 @@
         <!-- Sidebar -->
         <aside class="w-64 bg-dark text-white flex-shrink-0 hidden md:flex flex-col transition-all duration-300">
             <div class="h-16 flex items-center justify-center border-b border-gray-700">
-                <span class="text-xl font-bold tracking-wider">TRANSFER<span class="text-primary">PRO</span></span>
+                <span class="text-xl font-bold tracking-wider">NISI'S <span class="text-primary">TRANSFERT</span></span>
             </div>
             
             <nav class="flex-1 px-4 py-6 space-y-2">
@@ -224,7 +224,7 @@
             list.innerHTML = '<p class="px-4 py-3 text-sm text-gray-500">{{ __("Loading...") }}</p>';
             
             try {
-                const res = await fetch('/api/transactions/pending-list');
+                const res = await fetch('/bo-api/transactions/pending-list');
                 const data = await res.json();
                 
                 if (!data.data || data.data.length === 0) {
@@ -264,7 +264,7 @@
             content.innerHTML = '<p class="text-gray-500 text-center py-8">{{ __("Loading...") }}</p>';
             
             // Fetch details via verifyCode
-            fetch('/api/transactions/verify', {
+            fetch('/bo-api/transactions/verify', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -325,7 +325,7 @@
 
         async function confirmWithdraw(code) {
             try {
-                const res = await fetch('/api/transactions/withdraw', {
+                const res = await fetch('/bo-api/transactions/withdraw', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

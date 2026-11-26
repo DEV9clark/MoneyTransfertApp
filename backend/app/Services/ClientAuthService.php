@@ -87,10 +87,10 @@ class ClientAuthService
         try {
             $this->sms->sendSms(
                 $national,
-                "Votre code de verification Money Transfer : {$code}. Il expire dans "
+                "Votre code de verification Nisi's Transfert : {$code}. Il expire dans "
                 . (int) config('transfer.client.otp_ttl_minutes', 10) . " minutes. Ne le communiquez a personne.",
                 $country->phone_code,
-                'mt-otp-' . $verification->id
+                'nt-otp-' . $verification->id
             );
         } catch (\Throwable $e) {
             report($e);

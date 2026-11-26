@@ -232,7 +232,7 @@ MIT
 
 ## 👤 Auteur
 
-Money Transfer App
+Nisi's Transfert App
 
 ## 🤝 Contribution
 

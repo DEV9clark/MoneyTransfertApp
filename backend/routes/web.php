@@ -57,6 +57,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('transactions', [TransactionController::class, 'history']);
         Route::get('transactions/stats', [TransactionController::class, 'stats']);
         Route::get('transactions/pending-count', [TransactionController::class, 'pendingCount']);
+        Route::get('transactions/pending-list', [TransactionController::class, 'pendingList']);
         Route::post('transactions/calculate-fees', [TransactionController::class, 'calculateFees']);
         Route::post('transactions', [TransactionController::class, 'transfer']);
 

@@ -46,8 +46,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         transactionsToShow.slice(0, 5).forEach(t => { // Show last 5
-            const convertedAmount = convertAmount(t.amount, t.currency, currentCurrency);
-
             const row = `
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4 text-sm font-medium text-gray-900">#${t.reference || 'N/A'}</td>

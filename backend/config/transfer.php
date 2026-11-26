@@ -59,7 +59,7 @@ return [
 
     // Informations imprimées en en-tête des reçus.
     'company' => [
-        'name' => env('COMPANY_NAME', 'Money Transfer'),
+        'name' => env('COMPANY_NAME', "Nisi's Transfert"),
         'address' => env('COMPANY_ADDRESS', 'Dakar, Sénégal'),
         'phone' => env('COMPANY_PHONE', ''),
         'email' => env('COMPANY_EMAIL', ''),

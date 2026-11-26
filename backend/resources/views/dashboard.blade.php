@@ -86,6 +86,7 @@
                     <tr>
                         <td colspan="7" class="px-6 py-4 text-center text-gray-400">Chargement...</td>
                     </tr>
+                    {{-- Les lignes sont injectées dynamiquement par dashboard-view.js --}}
                 </tbody>
             </table>
         </div>

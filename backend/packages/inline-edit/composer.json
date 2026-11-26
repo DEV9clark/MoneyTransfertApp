@@ -8,11 +8,11 @@
         "inline-edit",
         "editable",
         "ajax"
-    ],
+    ], 
     "authors": [
         {
-            "name": "Money Transfer App",
-            "email": "dev@moneytransfer.com"
+            "name": "Nisi's Transfert App",
+            "email": "dev@nisistransfer.com"
         }
     ],
     "require": {

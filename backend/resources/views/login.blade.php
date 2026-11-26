@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Login - TransferPro</title>
+    <title>Login - Nisi's Transfert</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
@@ -38,7 +38,7 @@
 
     <div class="glass w-full max-w-md p-8 rounded-2xl shadow-2xl transform transition-all hover:scale-[1.01]">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">TRANSFER<span class="text-primary">PRO</span></h1>
+            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">NISI'S <span class="text-primary">TRANSFERT</span></h1>
             <p class="text-gray-500 mt-2 text-sm">{{ __('Welcome back! Please enter your details.') }}</p>
         </div>
 

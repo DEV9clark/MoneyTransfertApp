@@ -128,7 +128,7 @@ class NotificationService
 
     public function notifySender(array $transaction): void
     {
-        $message = "✅ TRANSFERPRO\n\n"
+        $message = "✅ Nisi's Transfert\n\n"
             . "Vous avez envoyé {$transaction['amount']} {$transaction['currency']} "
             . "à {$transaction['recipient_name']}.\n\n"
             . "Code: {$transaction['reference']}\n"
@@ -140,7 +140,7 @@ class NotificationService
 
     public function notifyRecipient(array $transaction): void
     {
-        $message = "💰 TRANSFERPRO\n\n"
+        $message = "💰 Nisi's Transfert\n\n"
             . "{$transaction['sender_name']} vous envoie "
             . "{$transaction['amount']} {$transaction['currency']}.\n\n"
             . "🔑 Code de retrait: {$transaction['reference']}\n\n"
@@ -158,7 +158,7 @@ class NotificationService
             . "Réf: {$transaction['reference']}";
         $this->sendSms($transaction['recipient_phone'], $msgRecipient);
         // Message à l'expéditeur (pour l'informer)
-        $msgSender = "📢 TRANSFERPRO\n\n"
+        $msgSender = "📢 Nisi's Transfert\n\n"
             . "{$transaction['recipient_name']} a retiré les "
             . "{$transaction['amount']} {$transaction['currency']} "
             . "que vous avez envoyés.\n"
