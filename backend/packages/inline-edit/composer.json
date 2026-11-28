@@ -31,7 +31,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "MoneyTransfer\\InlineEdit\\Tests\\": "tests/"
+            "MoneyTransfer\\InlineEdit\\Tests\\": "tests/",
+            "money-transfer\\inline-edit\\": "@dev"
         }
     },
     "extra": {
